@@ -1,0 +1,30 @@
+# API Keys and Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Vercel
+.vercel
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
