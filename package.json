@@ -1,10 +1,17 @@
 {
   "name": "guantu-simulator",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
+  "description": "官途模拟器 - 古代官场模拟游戏",
+  "main": "server.js",
   "scripts": {
-    "build": "echo done"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Static site, no build needed'"
   },
-  "dependencies": {}
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
