@@ -2951,19 +2951,27 @@ function computeEnding() {
   // Determine ending type
   let endingType, endingTitle, endingIcon, endingSummary, evalText;
 
-  // 修复后的难度系数：降低所有难度的风险惩罚
-  // easy: 0.6 -> 最难落马
-  // normal: 0.9 -> 正常风险
-  // hard: 1.2 -> 高风险
-  const diffFactor = difficulty === 'easy' ? 0.6 : difficulty === 'hard' ? 1.2 : 0.9;
+  // 真实数据驱动的结局计算
+  // 基于原始官员数据分析：53%腐败比例，但游戏中玩家主动选择会降低此比例
+  // 目标分布：BAD 15-25%, MID2 15-20%, MID 35-45%, GOOD 20-30%, GREAT 5-10%
+  //
+  // 难度系数：
+  // easy: 0.8 -> 降低风险，更宽松
+  // normal: 1.0 -> 标准风险，接近现实
+  // hard: 1.3 -> 提高风险，更严苛
+  const diffFactor = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.3 : 1.0;
   const risk = (100 - integrityScore) * diffFactor;
 
-  // 修复后的判定逻辑：更平衡的结局分布
-  // 计算综合表现评分：60%来自属性平均分，40%来自职级进度
+  // 综合表现评分：60%来自属性平均分，40%来自职级进度
   const performanceScore = totalScore * 0.6 + (rank / maxSteps) * 100 * 0.4;
 
-  if (risk >= 85) {
-    // 只有在极高风险时才落马（需要廉洁度<30且困难模式）
+  // 添加随机性，模拟真实世界的不确定性（±10%波动）
+  const randomFactor = 0.9 + Math.random() * 0.2; // 0.9-1.1
+  const adjustedRisk = risk * randomFactor;
+
+  if (adjustedRisk >= 65) {
+    // 坏结局：廉洁度太低，面临严重后果
+    // normal模式下需要廉洁度<35，hard模式下<50
     endingType = 'BAD';
     endingIcon = '⚖️';
     endingTitle = '落马——双规室里的人生终点';
