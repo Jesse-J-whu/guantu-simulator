@@ -27,7 +27,8 @@ const mimeTypes = {
 
 // 创建服务器
 const server = http.createServer(async (req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  // 使用现代URL API替代已弃用的url.parse()
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = parsedUrl.pathname;
 
   // 设置CORS头
