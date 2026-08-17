@@ -9,7 +9,7 @@
     "build": "echo 'Static site, no build needed'"
   },
   "dependencies": {
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.6.1"
   },
   "engines": {
     "node": ">=18"

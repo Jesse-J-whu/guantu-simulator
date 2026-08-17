@@ -2383,13 +2383,22 @@ async function callLLM_event() {
   // Story arc
   const storyArc = getStoryArcPrompt(step, maxSteps);
 
-  // Attribute-based hints
+  // Attribute-based hints (修复：增加平衡的选项提示)
   let attrHints = [];
-  if (attrs.integrity < 40) attrHints.push('廉洁度很低，应生成利益诱惑升级或被调查的风险事件');
-  else if (attrs.integrity > 80) attrHints.push('廉洁度很高，可生成考验原则底线或道德两难的事件');
+  if (attrs.integrity < 40) {
+    attrHints.push('廉洁度很低，应生成利益诱惑升级或被调查的风险事件，但也提供挽回廉洁度的选项');
+  } else if (attrs.integrity > 80) {
+    attrHints.push('廉洁度很高，可生成考验原则底线或道德两难的事件');
+  } else {
+    // 中等廉洁度时，提供平衡的选项
+    attrHints.push('廉洁度中等，可生成需要权衡利弊的复杂决策事件，选项应包含廉洁度正负平衡的效果');
+  }
   if (attrs.network > 70) attrHints.push('人脉资源丰富，可生成高层关系运作或被拉拢站队事件');
   if (attrs.politics > 70) attrHints.push('政治嗅觉敏锐，可生成需要政治判断力的复杂博弈事件');
   if (attrs.execute > 70) attrHints.push('执行力突出，可生成重大项目或危机处理事件');
+
+  // 修复：确保选项效果平衡，不能都是负面效果
+  attrHints.push('重要：四个选项的效果必须平衡分布，至少有2个选项应该包含正面的属性增益，廉洁度变化必须正负兼有');
 
   const diffLabel = difficulty === 'easy' ? '轻松' : difficulty === 'hard' ? '硬核' : '标准';
 
@@ -2473,24 +2482,27 @@ ${(() => { const rag = buildRAGPromptSection(dept.id, currentRank); return rag ?
 【官场格言】一句暗示或格言
 【选项A】选项文字描述
 【选项A提示】这个选项的提示或暗示
-【选项A效果】政治嗅觉:X 执行力:X 人脉资源:X 廉洁度:X 晋升:X（数字范围-30到+20，晋升只能0或1）
+【选项A效果】政治嗅觉:+5 执行力:+3 人脉资源:+2 廉洁度:0 晋升:0
 【选项B】选项文字描述
 【选项B提示】这个选项的提示或暗示
-【选项B效果】政治嗅觉:X 执行力:X 人脉资源:X 廉洁度:X 晋升:X
+【选项B效果】政治嗅觉:0 执行力:0 人脉资源:0 廉洁度:0 晋升:0
 【选项C】选项文字描述
 【选项C提示】这个选项的提示或暗示
-【选项C效果】政治嗅觉:X 执行力:X 人脉资源:X 廉洁度:X 晋升:X
+【选项C效果】政治嗅觉:-2 执行力:0 人脉资源:-3 廉洁度:+5 晋升:0
 【选项D】选项文字描述
 【选项D提示】这个选项的提示或暗示
-【选项D效果】政治嗅觉:X 执行力:X 人脉资源:X 廉洁度:X 晋升:X
+【选项D效果】政治嗅觉:+3 执行力:+5 人脉资源:+4 廉洁度:-3 晋升:0
 
 注意：
-- effect数字范围-30到+20
-- rank（晋升）只在表现特别突出的选项上设为1（且只能提拔到${nextRank}）
-- 选项必须具体且各有利弊
+- 必须使用具体数字，不要使用X占位符
+- 每个属性必须是-30到+20之间的整数（包括正数和负数）
+- 廉洁度变化很重要，好的选择应该增加或保持廉洁度
+- 晋升（rank）只在表现特别突出的选项上设为1（且只能提拔到${nextRank}）
+- 四个选项的效果必须平衡分布，不要都是正面或都是负面
+- 选项必须具体且各有利弊，玩家需要权衡
 - 事件描述中的人物职务必须符合自检清单的所有要求
 - 【事件描述】可以写多行长文，直到遇到下一个【】标记为止
-- 只输出以上标记格式的内容，不要输出任何其他文字`;
+- 只输出以上标记格式的内容，不要输出任何其他文字';
 
   console.log('[LLM] Calling /api/llm-proxy (API Key safe on server)');
   console.log('[LLM] Prompt length:', prompt.length, 'chars');
@@ -2981,7 +2993,7 @@ async function resolveEnding() {
 }
 
 function computeEnding() {
-  const { attrs, rank, dept, difficulty } = gameState;
+  const { attrs, rank, dept, difficulty, maxSteps } = gameState;
   const integrityScore = attrs.integrity;
   const politicsScore = attrs.politics;
   const networkScore = attrs.network;
@@ -2994,34 +3006,55 @@ function computeEnding() {
   // Determine ending type
   let endingType, endingTitle, endingIcon, endingSummary, evalText;
 
-  const diffFactor = difficulty === 'easy' ? 0.7 : difficulty === 'hard' ? 1.4 : 1.0;
+  // 真实数据驱动的结局计算
+  // 基于原始官员数据分析：53%腐败比例，但游戏中玩家主动选择会降低此比例
+  // 目标分布：BAD 15-25%, MID2 15-20%, MID 35-45%, GOOD 20-30%, GREAT 5-10%
+  //
+  // 难度系数：
+  // easy: 0.8 -> 降低风险，更宽松
+  // normal: 1.0 -> 标准风险，接近现实
+  // hard: 1.3 -> 提高风险，更严苛
+  const diffFactor = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.3 : 1.0;
   const risk = (100 - integrityScore) * diffFactor;
 
-  if (risk >= 70) {
+  // 综合表现评分：60%来自属性平均分，40%来自职级进度
+  const performanceScore = totalScore * 0.6 + (rank / maxSteps) * 100 * 0.4;
+
+  // 添加随机性，模拟真实世界的不确定性（±10%波动）
+  const randomFactor = 0.9 + Math.random() * 0.2; // 0.9-1.1
+  const adjustedRisk = risk * randomFactor;
+
+  if (adjustedRisk >= 65) {
+    // 坏结局：廉洁度太低，面临严重后果
+    // normal模式下需要廉洁度<35，hard模式下<50
     endingType = 'BAD';
     endingIcon = '⚖️';
     endingTitle = '落马——双规室里的人生终点';
     endingSummary = `你在仕途上走了${gameState.maxSteps}年，最终因廉洁度严重透支，被纪委立案调查。从光鲜的官员到囹圄之身，这条路走得快，也走得险。`;
     evalText = `你的官途，是一面镜子。\n\n廉洁度只剩 ${integrityScore} 分。你选择了那条看似捷径的路，在权力的诱惑面前一次次妥协，终于走到了无法回头的岔路口。\n\n现实中，类似你路径的典型案例数以千计。大多数人在落马之前，都觉得自己足够聪明，足够小心。\n\n历史不以人的主观愿望为转移。\n\n【官途评语】风险偏好者 · 短视逐利型`;
-  } else if (integrityScore >= 75 && totalScore >= 65 && rank >= 3) {
+  } else if (integrityScore >= 70 && performanceScore >= 60 && rank >= 2) {
+    // 放宽GREAT结局条件：廉洁度70（原75），职级2（原3）
     endingType = 'GREAT';
     endingIcon = '🌟';
     endingTitle = `光荣退休 — ${finalRank}`;
     endingSummary = `你在体制内耕耘了${gameState.maxSteps}年，以${finalRank}的职级光荣退休。廉洁、能干、有人缘，你走出了一条让人尊敬的官途。`;
     evalText = `你的官途，是一首质朴的诗。\n\n政治嗅觉 ${politicsScore} | 执行力 ${executeScore} | 人脉 ${networkScore} | 廉洁度 ${integrityScore}\n\n你始终知道，真正的权力不是用来占便宜的，而是用来做事情的。你在关键节点做出了正确的选择，在诱惑面前守住了底线。\n\n体制内，像你这样的人，其实并不少。只是很多时候，他们的故事不够"戏剧性"，所以不常被讲述。\n\n【官途评语】清廉务实型 · 稳步致远者`;
-  } else if (integrityScore >= 60 && totalScore >= 55) {
+  } else if (integrityScore >= 50 && performanceScore >= 45) {
+    // 放宽GOOD结局条件：廉洁度50（原60），综合评分45（原55）
     endingType = 'GOOD';
     endingIcon = '📋';
     endingTitle = `平稳落幕 — ${finalRank}`;
     endingSummary = `你在体制内任职${gameState.maxSteps}年，以${finalRank}退休。没有特别耀眼，也没有重大失误，是官场中大多数人的真实写照。`;
     evalText = `你的官途，是一杯温热的白开水。\n\n平均属性 ${Math.round(totalScore)} 分。你没有走极端，也没有特别突出。\n\n体制内，像你这样的人是主流——不贪不懒，但也没有那么炽热的理想。你完成了自己该完成的工作，领了该领的薪水，安然退休。\n\n这也许不够"精彩"，但也许正是大多数人最真实的选择。\n\n【官途评语】务实稳健型 · 中流砥柱者`;
-  } else if (rank <= 1) {
+  } else if (integrityScore >= 35) {
+    // 保持一定廉洁度，至少是普通结局（调任闲职）
     endingType = 'MID';
     endingIcon = '🌿';
     endingTitle = '调任闲职，颐养天年';
     endingSummary = `你在仕途上勤恳工作了${gameState.maxSteps}年，但晋升之路并不顺畅，最终被调往一个清闲的岗位，远离权力中心，却也得享安宁。`;
     evalText = `你的官途，是一条幽静的林间小道。\n\n你没能登上权力的顶峰，但也没有摔落深渊。或许是运气，或许是能力，或许只是命运的安排。\n\n在那个清闲的岗位上，你有时间思考那些在忙碌中来不及思考的问题：权力究竟意味着什么？\n\n【官途评语】淡泊名利型 · 随遇而安者`;
   } else {
+    // 只有廉洁度<35才会受到处分
     endingType = 'MID2';
     endingIcon = '⚡';
     endingTitle = '受到处分，仕途受阻';
