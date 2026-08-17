@@ -269,7 +269,6 @@ async function handleLLMProxy(req, res) {
 
     } catch (err) {
       console.error('[Proxy] Error:', err.message);
-      activeRequests--;
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Proxy error: ' + err.message }));
     }

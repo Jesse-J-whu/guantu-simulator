@@ -2676,7 +2676,7 @@ ${(() => {
 - 选项必须具体且各有利弊，玩家需要权衡
 - 事件描述中的人物职务必须符合自检清单的所有要求
 - 【事件描述】可以写多行长文，直到遇到下一个【】标记为止
-- 只输出以上标记格式的内容，不要输出任何其他文字';
+- 只输出以上标记格式的内容，不要输出任何其他文字`;
 
   console.log('[LLM] Calling /api/llm-proxy (API Key safe on server)');
   console.log('[LLM] Prompt length:', prompt.length, 'chars');
@@ -2985,7 +2985,7 @@ async function renderEvent() {
             <div style="font-size:2rem;margin-bottom:16px;">⚠</div>
             <div style="font-size:1.1rem;font-weight:bold;color:var(--gold);margin-bottom:10px;">AI 推演暂时中断</div>
             <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:24px;">已尝试 ${MAX_RETRIES + 1} 次推演，均未成功。请稍后再试。<br><span style="font-size:0.7rem;opacity:0.5;">${shortMsg}</span></div>
-            <button onclick="showEvent()" style="padding:10px 28px;background:var(--gold);color:#1a1a2e;border:none;border-radius:6px;font-size:0.95rem;cursor:pointer;font-weight:bold;">重新推演</button>
+            <button onclick="renderEvent()" style="padding:10px 28px;background:var(--gold);color:#1a1a2e;border:none;border-radius:6px;font-size:0.95rem;cursor:pointer;font-weight:bold;">重新推演</button>
           </div>
         `;
         return;
@@ -3050,7 +3050,18 @@ function renderAttrsPanel() {
 
 function makeChoice(idx) {
   const event = gameState.events[gameState.step];
+  // Guard against stale/missing event (e.g. LLM generation failed at this step)
+  if (!event || !Array.isArray(event.choices)) {
+    console.error('[makeChoice] No event found at step', gameState.step, '— re-invoking renderEvent');
+    renderEvent();
+    return;
+  }
   const choice = event.choices[idx];
+  if (!choice) {
+    console.error('[makeChoice] Invalid choice index', idx, 'for event at step', gameState.step);
+    renderEvent();
+    return;
+  }
 
   // Record timeline
   gameState.timeline.push({
