@@ -2087,6 +2087,175 @@ async function loadRAGKnowledge() {
   }
 }
 
+// ===================================================================
+// SMART RAG RETRIEVAL (智能RAG检索)
+// ===================================================================
+
+// 事件类型到案例类型的映射
+const EVENT_TYPE_TO_CASE_TYPE = {
+  'daily': ['日常政务', '基础工作', '常规业务'],
+  'opportunity': ['晋升机遇', '提拔重用', '考核考察'],
+  'temptation': ['腐败案例', '利益诱惑', '权钱交易'],
+  'politics': ['站队选择', '派系政治', '人事博弈'],
+  'crisis': ['危机应对', '突发事件', '群众上访'],
+  'interpersonal': ['人际关系', '职场博弈', '上下级关系']
+};
+
+// 叙事指令到事件类型的映射
+const NARRATIVE_TO_EVENT_TYPE = {
+  '基层工作细节': 'daily',
+  '人际博弈': 'interpersonal',
+  '突发危机': 'crisis',
+  '家庭与事业的冲突': 'interpersonal',
+  '权力运作': 'politics',
+  '道德抉择': 'temptation',
+  '外部环境变化': 'crisis',
+  '历史遗留问题': 'daily',
+  '跨部门协调': 'politics',
+  '个人成长时刻': 'opportunity',
+  '派系政治': 'politics',
+  '信息战': 'politics',
+  '群众路线': 'daily',
+  '数字化改革': 'daily',
+  '纪检风险': 'temptation'
+};
+
+// 案例分类标签
+function classifyCase(caseData) {
+  const tags = [];
+
+  // 腐败标签
+  if (caseData.is_corrupt) {
+    tags.push('腐败案例');
+    if (caseData.corrupt_detail) {
+      if (caseData.corrupt_detail.includes('受贿')) tags.push('受贿');
+      if (caseData.corrupt_detail.includes('贪污')) tags.push('贪污');
+      if (caseData.corrupt_detail.includes('滥用职权')) tags.push('滥用职权');
+    }
+  }
+
+  // 职级标签
+  if (caseData.level) {
+    if (caseData.level.includes('正') || caseData.level.includes('副')) {
+      tags.push('高级官员');
+    }
+  }
+
+  // 组织标签
+  if (caseData.org) {
+    if (caseData.org.includes('纪委')) tags.push('纪检监察');
+    if (caseData.org.includes('发改委')) tags.push('经济发展');
+    if (caseData.org.includes('财政')) tags.push('财政管理');
+    if (caseData.org.includes('组织')) tags.push('组织人事');
+  }
+
+  return tags;
+}
+
+// 简化的文本相似度计算（基于关键词匹配）
+function calculateTextSimilarity(text1, text2) {
+  // 中文分词（简化版：按字符分割）
+  const tokenize = (text) => {
+    return text.toLowerCase()
+      .replace(/[^一-龥a-z0-9]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 1);
+  };
+
+  const tokens1 = tokenize(text1);
+  const tokens2 = tokenize(text2);
+
+  if (tokens1.length === 0 || tokens2.length === 0) return 0;
+
+  // 计算交集
+  const set1 = new Set(tokens1);
+  const set2 = new Set(tokens2);
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+
+  // 余弦相似度
+  const dotProduct = intersection.size;
+  const magnitude1 = Math.sqrt(set1.size);
+  const magnitude2 = Math.sqrt(set2.size);
+
+  if (magnitude1 === 0 || magnitude2 === 0) return 0;
+  return dotProduct / (magnitude1 * magnitude2);
+}
+
+// 智能案例检索：基于事件类型和案例标签
+function getRelevantCasesByEventType(eventType, deptId, gameRank, count = 2) {
+  if (!RAG_DATA) return null;
+
+  const ragLevel = getRAGLevel(gameRank);
+  const key = deptId + '_' + ragLevel;
+  const cases = RAG_DATA.cases_by_dept_level[key];
+
+  if (!cases || cases.length === 0) return null;
+
+  // 获取目标案例类型
+  const targetTypes = EVENT_TYPE_TO_CASE_TYPE[eventType] || ['日常政务'];
+
+  // 为每个案例计算相关性分数
+  const caseScores = cases.map(caseData => {
+    let score = 0;
+
+    // 案例标签匹配
+    const tags = classifyCase(caseData);
+    for (const target of targetTypes) {
+      for (const tag of tags) {
+        if (tag.includes(target) || target.includes(tag)) {
+          score += 2; // 标签匹配加分
+        }
+      }
+    }
+
+    // 文本相似度（基于组织、职位描述）
+    if (caseData.org) {
+      for (const target of targetTypes) {
+        score += calculateTextSimilarity(caseData.org, target) * 3;
+      }
+    }
+
+    if (caseData.position) {
+      for (const target of targetTypes) {
+        score += calculateTextSimilarity(caseData.position, target) * 2;
+      }
+    }
+
+    return { caseData, score };
+  });
+
+  // 按分数排序
+  caseScores.sort((a, b) => b.score - a.score);
+
+  // 返回最相关的案例
+  const topCases = caseScores.slice(0, count).map(item => item.caseData);
+
+  // 如果分数太低（<1），说明没有相关案例，返回随机案例
+  if (topCases[0] && caseScores[0].score < 1) {
+    const shuffled = [...cases].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
+
+  return topCases;
+}
+
+// 智能腐败案例检索：基于事件类型
+function getRelevantCorruptCase(eventType) {
+  if (!RAG_DATA || !RAG_DATA.corrupt_cases || RAG_DATA.corrupt_cases.length === 0) return null;
+
+  // temptation和crisis类型事件优先返回严重腐败案例
+  if (eventType === 'temptation' || eventType === 'crisis') {
+    const severeCases = RAG_DATA.corrupt_cases.filter(c =>
+      c.amount && (c.amount.includes('万') || c.amount.includes('亿'))
+    );
+    if (severeCases.length > 0) {
+      return severeCases[Math.floor(Math.random() * severeCases.length)];
+    }
+  }
+
+  return RAG_DATA.corrupt_cases[Math.floor(Math.random() * RAG_DATA.corrupt_cases.length)];
+}
+
 function sampleRAGCases(deptId, gameRank, count) {
   if (!RAG_DATA) return null;
   const ragLevel = getRAGLevel(gameRank);
@@ -2113,21 +2282,19 @@ function samplePromotionPath() {
   return RAG_DATA.promotion_paths[Math.floor(Math.random() * RAG_DATA.promotion_paths.length)];
 }
 
-function buildRAGPromptSection(deptId, gameRank) {
+function buildRAGPromptSection(deptId, gameRank, eventType = 'daily') {
   if (!RAG_DATA) return '';
 
   const parts = [];
 
-  // 优化1：减少案例数量（从3个降到2个），减少prompt长度
-  const cases = sampleRAGCases(deptId, gameRank, 2);
+  // 智能检索：基于事件类型获取相关案例
+  const cases = getRelevantCasesByEventType(eventType, deptId, gameRank, 2);
   if (cases && cases.length > 0) {
     parts.push('【同级真实官员任职参考】');
     cases.forEach((c, i) => {
-      // 优化2：只包含最关键的信息，减少token使用
       let line = `${i + 1}. ${c.name}：${c.level}，${c.position}（${c.org}）`;
       if (c.area && c.area !== '中央nannan' && !c.area.includes('nan')) line += `，${c.area}`;
       line += `，任期${c.period}`;
-      // 只在必要时添加腐败信息
       if (c.is_corrupt && c.corrupt_detail) {
         line += ` [后被查处]`;
       }
@@ -2135,27 +2302,23 @@ function buildRAGPromptSection(deptId, gameRank) {
     });
   }
 
-  // 优化3：仅在特定阶段添加腐败案例，减少不必要的prompt
+  // 根据游戏进度和事件类型智能添加腐败案例
   const step = gameState.step || 0;
   const maxSteps = gameState.maxSteps || 10;
   const progress = step / maxSteps;
 
-  // 只在博弈期和决战期（进度>50%）添加腐败案例
-  if (progress > 0.5) {
-    const corrupt = sampleCorruptCase();
+  // 在进度>50%或事件类型为temptation/crisis时添加腐败案例
+  if (progress > 0.5 || eventType === 'temptation' || eventType === 'crisis') {
+    const corrupt = getRelevantCorruptCase(eventType);
     if (corrupt) {
       parts.push('');
       parts.push('【真实腐败案例参考】');
-      // 优化4：简化腐败案例描述
       let cline = `${corrupt.name}（${corrupt.education}），${corrupt.crime}`;
       if (corrupt.amount) cline += `，涉案${corrupt.amount}`;
       if (corrupt.sentence) cline += `，判${corrupt.sentence}`;
       parts.push(cline);
     }
   }
-
-  // 优化5：移除晋升路径参考，因为不直接影响当前事件生成
-  // （如果需要可以在背景生成时单独添加）
 
   return parts.length > 0 ? parts.join('\n') : '';
 }
@@ -2460,7 +2623,18 @@ ${recentChoices || '（刚开始官途）'}
 ## 因果延续要求
 ${timeline.length > 0 ? `玩家上一步做了选择，当前事件应体现该选择的后续影响，人物关系和情节应自然延续。` : '这是玩家的第一个事件，应侧重入职/到任的初始情景。'}
 
-${(() => { const rag = buildRAGPromptSection(dept.id, currentRank); return rag ? '## 真实官员履历参考（请参考这些真实经历增强事件的真实感）\n' + rag : ''; })()}
+${(() => {
+  // 从叙事指令推断事件类型，用于智能RAG检索
+  let eventType = 'daily';
+  for (const [narrative, type] of Object.entries(NARRATIVE_TO_EVENT_TYPE)) {
+    if (narrativeDirective.includes(narrative)) {
+      eventType = type;
+      break;
+    }
+  }
+  const rag = buildRAGPromptSection(dept.id, currentRank, eventType);
+  return rag ? '## 真实官员履历参考（请参考这些真实经历增强事件的真实感）\n' + rag : '';
+})()}
 
 ## 职务自检清单（生成事件后你必须逐条检查）
 1. 事件中出现的所有人物职务，是否与职级对照表一致？
