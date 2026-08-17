@@ -2115,48 +2115,48 @@ function samplePromotionPath() {
 
 function buildRAGPromptSection(deptId, gameRank) {
   if (!RAG_DATA) return '';
-  
+
   const parts = [];
-  
-  // 1. 相似级别+部门的真实官员任职经历
-  const cases = sampleRAGCases(deptId, gameRank, 3);
+
+  // 优化1：减少案例数量（从3个降到2个），减少prompt长度
+  const cases = sampleRAGCases(deptId, gameRank, 2);
   if (cases && cases.length > 0) {
-    parts.push('【同级真实官员任职参考 — 请参考这些真实经历来构思事件】');
+    parts.push('【同级真实官员任职参考】');
     cases.forEach((c, i) => {
+      // 优化2：只包含最关键的信息，减少token使用
       let line = `${i + 1}. ${c.name}：${c.level}，${c.position}（${c.org}）`;
       if (c.area && c.area !== '中央nannan' && !c.area.includes('nan')) line += `，${c.area}`;
       line += `，任期${c.period}`;
+      // 只在必要时添加腐败信息
       if (c.is_corrupt && c.corrupt_detail) {
-        line += ` [此人后来因${c.corrupt_detail['查处/罢黜原因']}被查处，${c.corrupt_detail['一审判决'] || ''}]`;
+        line += ` [后被查处]`;
       }
       parts.push(line);
     });
   }
-  
-  // 2. 腐败案例参考（博弈期/决战期注入）
-  const corrupt = sampleCorruptCase();
-  if (corrupt) {
-    parts.push('');
-    parts.push('【真实腐败案例参考 — 可参考此案例构思利益诱惑事件】');
-    let cline = `${corrupt.name}（${corrupt.education}），${corrupt.crime}`;
-    if (corrupt.amount) cline += `，涉案金额${corrupt.amount}`;
-    if (corrupt.sentence) cline += `，被判${corrupt.sentence}`;
-    cline += '。';
-    if (corrupt.career_climax && corrupt.career_climax.length > 0) {
-      const climax = corrupt.career_climax.map(c => c.position + '(' + c.org + ')').join(' → ');
-      cline += `事发前履历: ${climax}`;
+
+  // 优化3：仅在特定阶段添加腐败案例，减少不必要的prompt
+  const step = gameState.step || 0;
+  const maxSteps = gameState.maxSteps || 10;
+  const progress = step / maxSteps;
+
+  // 只在博弈期和决战期（进度>50%）添加腐败案例
+  if (progress > 0.5) {
+    const corrupt = sampleCorruptCase();
+    if (corrupt) {
+      parts.push('');
+      parts.push('【真实腐败案例参考】');
+      // 优化4：简化腐败案例描述
+      let cline = `${corrupt.name}（${corrupt.education}），${corrupt.crime}`;
+      if (corrupt.amount) cline += `，涉案${corrupt.amount}`;
+      if (corrupt.sentence) cline += `，判${corrupt.sentence}`;
+      parts.push(cline);
     }
-    parts.push(cline);
   }
-  
-  // 3. 晋升路径参考
-  const path = samplePromotionPath();
-  if (path) {
-    parts.push('');
-    parts.push('【真实晋升路径参考 — 可参考设计NPC的晋升轨迹】');
-    parts.push(`${path.name}: ${path.path}`);
-  }
-  
+
+  // 优化5：移除晋升路径参考，因为不直接影响当前事件生成
+  // （如果需要可以在背景生成时单独添加）
+
   return parts.length > 0 ? parts.join('\n') : '';
 }
 
@@ -2571,16 +2571,71 @@ async function callLLM_background(deptName, difficulty) {
 const LLM_PROXY_URL = '/api/llm-proxy';
 
 async function callLLMProxy(prompt, options = {}) {
-  const { max_tokens = 2000, temperature = 0.9, top_p = 0.95 } = options;
+  // 优化后的参数设置
+  const { max_tokens = 1500, temperature = 0.8, top_p = 0.90, stream = false } = options;
+
+  // 检测请求类型并使用对应的最优参数
+  let finalTemp = temperature;
+  let finalMaxTokens = max_tokens;
+  let finalTopP = top_p;
+
+  // 背景生成使用更保守的参数
+  if (prompt.includes('官途开局背景') || prompt.includes('生成一段官途开局背景')) {
+    finalTemp = 0.7;
+    finalMaxTokens = 1000;
+    finalTopP = 0.85;
+  }
+
   const resp = await fetch(LLM_PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, max_tokens, temperature, top_p })
+    body: JSON.stringify({
+      prompt,
+      max_tokens: finalMaxTokens,
+      temperature: finalTemp,
+      top_p: finalTopP,
+      stream
+    })
   });
+
   if (!resp.ok) {
     const errData = await resp.json().catch(() => ({}));
     throw new Error(errData.error || `Proxy error ${resp.status}`);
   }
+
+  // 处理流式响应
+  if (stream) {
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      // 解析 SSE 格式的数据
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              fullText += parsed.content;
+            }
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    return fullText;
+  }
+
+  // 非流式响应（原有逻辑）
   const data = await resp.json();
   return data.content || '';
 }
