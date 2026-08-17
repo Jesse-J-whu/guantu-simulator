@@ -2128,9 +2128,14 @@ function classifyCase(caseData) {
   if (caseData.is_corrupt) {
     tags.push('腐败案例');
     if (caseData.corrupt_detail) {
-      if (caseData.corrupt_detail.includes('受贿')) tags.push('受贿');
-      if (caseData.corrupt_detail.includes('贪污')) tags.push('贪污');
-      if (caseData.corrupt_detail.includes('滥用职权')) tags.push('滥用职权');
+      // corrupt_detail 可能是对象/数组/字符串，统一转成字符串再匹配
+      let detail = '';
+      if (typeof caseData.corrupt_detail === 'string') detail = caseData.corrupt_detail;
+      else if (Array.isArray(caseData.corrupt_detail)) detail = caseData.corrupt_detail.join(' ');
+      else if (typeof caseData.corrupt_detail === 'object') detail = Object.values(caseData.corrupt_detail).join(' ');
+      if (detail.includes('受贿')) tags.push('受贿');
+      if (detail.includes('贪污')) tags.push('贪污');
+      if (detail.includes('滥用职权')) tags.push('滥用职权');
     }
   }
 
