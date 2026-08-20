@@ -84,6 +84,18 @@ describe('事件解析', () => {
     expect(() => parseEvent('没有选项的内容', 0)).toThrow();
   });
 
+  it('键名变体容错:【选项 A】/全角Ａ 与 【选项A】 同键', () => {
+    const content = buildContent({}).replace(/【选项([AB])】/g, (_m, l) => `【选项 ${l}】`);
+    const evt = parseEvent(content, 0);
+    expect(evt.choices.length).toBeGreaterThanOrEqual(2);
+    const fullwidth = buildContent({}).replace(/【选项A】/, '【选项Ａ】');
+    expect(parseEvent(fullwidth, 0).choices.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('解析错误携带内容摘录(线上诊断)', () => {
+    expect(() => parseEvent('抱歉，我无法生成这个内容。', 0)).toThrow(/内容开头/);
+  });
+
   it('缺少【事件标题】→ 抛错', () => {
     expect(() => parseEvent(buildContent({ title: '' }), 0)).toThrow(/事件标题/);
   });

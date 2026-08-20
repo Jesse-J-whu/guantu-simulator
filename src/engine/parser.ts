@@ -7,7 +7,7 @@
 
 import type { Choice, ChoiceEffect, EventTag, GameEvent } from './types.ts';
 
-/** 按【】标记切分字段。 */
+/** 按【】标记切分字段。键名去除内部空白(容忍"选项 A"/"选项A"等变体)。 */
 export function parseMarkerFields(content: string): Record<string, string> {
   const fields: Record<string, string> = {};
   const markerRegex = /【([^】]+)】/g;
@@ -21,9 +21,22 @@ export function parseMarkerFields(content: string): Record<string, string> {
       ? content.lastIndexOf(`【${keys[i + 1].key}】`, keys[i + 1].start)
       : content.length;
     const end = keys[i + 1] ? Math.max(keys[i].start, nextMarker) : content.length;
-    fields[keys[i].key] = content.substring(keys[i].start, end).trim();
+    fields[normalizeKey(keys[i].key)] = content.substring(keys[i].start, end).trim();
   }
   return fields;
+}
+
+/** 键名归一:去空白、全角字母转半角(选项A/选项 A/选项Ａ 同键)。 */
+function normalizeKey(key: string): string {
+  return key
+    .replace(/\s+/g, '')
+    .replace(/[Ａ-Ｄａ-ｄ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+}
+
+/** 错误消息附内容摘录,便于线上诊断(拒答/跑题/截断一眼可辨)。 */
+function excerpt(content: string): string {
+  const flat = content.replace(/\s+/g, ' ').slice(0, 60);
+  return `(内容开头:"${flat}" 总长${content.length})`;
 }
 
 /** 解析 "政治嗅觉:+5 执行力:-3 ..." 效果串。 */
@@ -77,13 +90,13 @@ export function parseEvent(content: string, step: number): GameEvent {
     });
   }
   if (choices.length < 2) {
-    throw new Error(`事件解析失败:仅解析到 ${choices.length} 个选项`);
+    throw new Error(`事件解析失败:仅解析到 ${choices.length} 个选项 ${excerpt(content)}`);
   }
 
   const rawTag = (fields['事件类型'] || 'daily').toLowerCase().trim();
   const tag = TAG_MAP[rawTag] || 'daily';
   const title = fields['事件标题'] || '';
-  if (!title) throw new Error('事件解析失败:缺少【事件标题】');
+  if (!title) throw new Error(`事件解析失败:缺少【事件标题】 ${excerpt(content)}`);
 
   return {
     id: `evt_${step}_${Date.now().toString(36)}`,
@@ -114,7 +127,7 @@ export function parseBackground(content: string): {
   const fields = parseMarkerFields(content);
   const opening = fields['开场白'];
   if (!opening || opening.length < 30) {
-    throw new Error('背景解析失败:开场白缺失或过短');
+    throw new Error(`背景解析失败:开场白缺失或过短 ${excerpt(content)}`);
   }
   return {
     level: fields['行政级别'] || '县级',
