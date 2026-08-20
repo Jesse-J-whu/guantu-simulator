@@ -72,6 +72,17 @@ const TEMPLATES = [
 
 const NAMES = ['王建国', '李淑芬', '张卫东', '刘志强', '陈明理', '赵亚男'];
 
+// 标题库:按步数取用(30 > 默认24步),保证一局内标题互不相同,
+// 让去重管线在 mock 模式下也能产出"无重复文案"的对局。
+const TITLE_BANK = [
+  '急件深夜加班', '一把手点名调研', '验收现场的购物卡', '两位领导方案之争', '信访群众围堵办公楼',
+  '老科长退休托付', '材料改到第七稿', '网络舆情半夜爆了', '空缺的副科长职位', '审批窗口的老同学',
+  '饭局座次玄机', '检查组明天到', '防汛值守第一夜', '会议室的座次牌', '扶贫村的第一周',
+  '接待工作的细节', '文件流转的失误', '民主生活会的发言', '跨部门协调会', '年度考核的谈话',
+  '招标现场的质疑', '家属院的求助', '值班室的不速之客', '纪检组来电话', '表彰名单公示',
+  '党校学习通知', '邻县考察团来访', '数据口径之争', '加班餐的报销单', '局长办公室的谈话',
+];
+
 function hash(s) {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -96,12 +107,13 @@ function mockGenerate(prompt) {
   const stepMatch = prompt.match(/第(\d+)步/);
   const step = stepMatch ? parseInt(stepMatch[1], 10) : 0;
   const t = TEMPLATES[(step + h) % TEMPLATES.length];
+  const title = TITLE_BANK[(step - 1 + TITLE_BANK.length) % TITLE_BANK.length] || t.title;
   const lastTitle = (prompt.match(/标题[:：](.+)/) || [])[1];
   const npc = `${NAMES[h % NAMES.length]}(分管副局长)`;
   const lines = [
     `【事件类型】${t.tag}`,
     `【类型标签】${t.tagLabel}`,
-    `【事件标题】${t.title}`,
+    `【事件标题】${title}`,
     `【剧情衔接】${lastTitle ? `承接「${lastTitle.trim()}」的余波,${NAMES[h % NAMES.length]}再次出现。` : '这是你入职后的第一件事。'}`,
     `【事件描述】${t.desc}`,
     `【出场人物】${npc};办公室同事小刘(科员)`,

@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import type { ApplyResult, Difficulty, Ending, GameState } from '../engine/types.ts';
+import type { ApplyResult, Difficulty, Ending, GameState, PromotionRecord } from '../engine/types.ts';
 import {
   createGame,
   generateBackground,
@@ -36,6 +36,7 @@ export interface UseGame {
   error: string | null;
   feedback: Feedback | null;
   lastApply: ApplyResult | null;
+  lastPromotion: PromotionRecord | null;
   pendingNext: GameState | null;
   dismissFeedback: () => void;
   selectedDeptId: string | null;
@@ -74,11 +75,14 @@ export function useGame(): UseGame {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [lastApply, setLastApply] = useState<ApplyResult | null>(null);
+  const [lastPromotion, setLastPromotion] = useState<PromotionRecord | null>(null);
   const [pendingNext, setPendingNext] = useState<GameState | null>(null);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const llmRef = useRef(new ProxyLLMClient());
   const rngRef = useRef(new MathRandom());
+  // 已作答事件 id:防止同一事件被重复计分(晋升等待期间按钮恢复可点)。
+  const answeredEventRef = useRef<string | null>(null);
 
   const dismissFeedback = useCallback(() => setFeedback(null), []);
 
@@ -139,6 +143,8 @@ export function useGame(): UseGame {
   const choose = useCallback(
     async (idx: number) => {
       if (!state || !state.currentEvent) return;
+      if (answeredEventRef.current === state.currentEvent.id) return;
+      answeredEventRef.current = state.currentEvent.id;
       const result = applyChoice(state, idx);
       setState(result.state);
       setLastApply(result);
@@ -183,9 +189,12 @@ export function useGame(): UseGame {
 
       if (result.promoted) {
         // 先庆祝,弹层关闭后由 GameScreen 调 generateNext(pendingNext)。
+        // lastPromotion 独立于 feedback 存储:toast 消失后弹层仍需渲染。
+        setLastPromotion(result.promotion);
         setPendingNext(result.state);
         return;
       }
+      setLastPromotion(null);
       setTimeout(() => void generateNext(result.state), 900);
     },
     [state, generateNext],
@@ -198,6 +207,7 @@ export function useGame(): UseGame {
   /** 晋升庆祝关闭后继续推演。 */
   const continueAfterPromotion = useCallback(() => {
     setFeedback(null);
+    setLastPromotion(null);
     const pending = pendingNext;
     setPendingNext(null);
     if (pending) void generateNext(pending);
@@ -210,8 +220,10 @@ export function useGame(): UseGame {
     setSelectedDeptId(null);
     setFeedback(null);
     setLastApply(null);
+    setLastPromotion(null);
     setPendingNext(null);
     setError(null);
+    answeredEventRef.current = null;
   }, []);
 
   return {
@@ -224,6 +236,7 @@ export function useGame(): UseGame {
     feedback,
     dismissFeedback,
     lastApply,
+    lastPromotion,
     pendingNext,
     selectedDeptId,
     selectDept: setSelectedDeptId,

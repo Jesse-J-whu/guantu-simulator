@@ -42,16 +42,7 @@ export function GameScreen({
       <HUD state={state} />
       <div className="container">
         <div id="event-container">
-          {event ? (
-            <EventCard
-              event={event}
-              year={state.year}
-              attrs={state.attrs}
-              disabled={chosenIdx !== null}
-              chosenIdx={chosenIdx}
-              onChoose={handleChoose}
-            />
-          ) : error ? (
+          {error ? (
             <div className="event-card" style={{ textAlign: 'center', padding: '40px 24px' }} data-testid="error-card">
               <div style={{ fontSize: '2rem', marginBottom: 16 }}>⚠</div>
               <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--gold)', marginBottom: 10 }}>
@@ -64,6 +55,15 @@ export function GameScreen({
                 重新推演
               </button>
             </div>
+          ) : event ? (
+            <EventCard
+              event={event}
+              year={state.year}
+              attrs={state.attrs}
+              disabled={chosenIdx !== null}
+              chosenIdx={chosenIdx}
+              onChoose={handleChoose}
+            />
           ) : null}
         </div>
       </div>

@@ -36,9 +36,7 @@ export default function App() {
           error={game.error}
           toast={game.feedback}
           onDismissToast={game.dismissFeedback}
-          lastPromotion={
-            game.feedback?.promoted && game.lastApply?.promotion ? game.lastApply.promotion : null
-          }
+          lastPromotion={game.lastPromotion}
           onPromotionContinue={game.continueAfterPromotion}
           onChoose={(idx) => void game.choose(idx)}
           onRetry={() => void game.retryEvent()}
