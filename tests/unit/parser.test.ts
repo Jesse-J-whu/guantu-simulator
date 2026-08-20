@@ -84,6 +84,15 @@ describe('事件解析', () => {
     expect(() => parseEvent('没有选项的内容', 0)).toThrow();
   });
 
+  it('选项正文混入标签前缀(选项A：/A./（B）)被剥离', () => {
+    const content = buildContent({})
+      .replace('【选项A】选项A内容', '【选项A】选项A：真正的内容一')
+      .replace('【选项B】选项B内容', '【选项B】B. 真正的内容二')
+      .replace('【选项C】选项C内容', '【选项C】（C）真正的内容三');
+    const evt = parseEvent(content, 0);
+    expect(evt.choices.map((c) => c.text)).toEqual(['真正的内容一', '真正的内容二', '真正的内容三']);
+  });
+
   it('键名变体容错:【选项 A】/全角Ａ/小写a 与 【选项A】 同键', () => {
     const content = buildContent({}).replace(/【选项([AB])】/g, (_m, l) => `【选项 ${l}】`);
     const evt = parseEvent(content, 0);

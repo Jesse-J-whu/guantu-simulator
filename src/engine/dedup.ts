@@ -45,11 +45,21 @@ export function similarity(a: string, b: string): number {
   return Math.max(bigramScore, inter / Math.min(ca.size, cb.size));
 }
 
-/** 标题重复判定阈值:0.45 ≈ 换了几个字仍算重复。 */
-export const TITLE_DUP_THRESHOLD = 0.45;
+/**
+ * 标题重复判定阈值。0.72 ≈ 换几个字仍算重复(实测「拆迁户集体上访/
+ * 拆迁户联名上访」0.71)。低于此的 0.45-0.7 段是同一故事线的不同事件
+ * (连续性系统本来就要求反复围绕同一项目/人物展开),不算重复——
+ * 首轮真实扫描用 0.45 时 18/24 事件被误判,标题被兜底改写得面目全非。
+ */
+export const TITLE_DUP_THRESHOLD = 0.72;
 
-/** 选项重复判定阈值。 */
-export const CHOICE_DUP_THRESHOLD = 0.7;
+/**
+ * 选项重复判定阈值。0.8 = 只拦截近乎照抄(字符包含/全等);叙述性
+ * 措辞重叠(「向李明汇报这个问题」vs「主动向李明汇报核实情况」约
+ * 0.6-0.7)是正常叙事,放行。真实扫描曾放行过逐字重复
+ * (「将信息上报给领导，请求指示。」3 次全等),那才是要拦的。
+ */
+export const CHOICE_DUP_THRESHOLD = 0.8;
 
 /**
  * 泛化套话标题模式:真实 GLM 大规模扫描(312 事件)实测,glm-4-flash 对
@@ -132,7 +142,13 @@ export function enforceFreshness(
       .split(/[。！？!?\n]/)
       .map((s) => s.trim())
       .find((s) => s.length >= 6);
-    let headline = firstSentence ? firstSentence.slice(0, 16) : '';
+    // 截断优先落在标点/连接词边界,避免「…老旧小·日常政务」式腰斩。
+    let headline = '';
+    if (firstSentence) {
+      const window = firstSentence.slice(0, 18);
+      const cut = Math.max(window.lastIndexOf('，'), window.lastIndexOf('、'), window.lastIndexOf('：'));
+      headline = cut >= 8 ? window.slice(0, cut) : window;
+    }
     // 摘句仍撞车(描述也同质化的极端情况)→ 依次叠加类型标签与幕数,
     // 幕数随步数严格递增,兜底保证全字符串唯一。
     const collides = (t: string) => {
@@ -143,13 +159,21 @@ export function enforceFreshness(
     if (collides(headline)) headline = `${headline}(第${step + 1}幕)`;
     event.title = headline;
   }
-  // 选项:与历史选项雷同的直接剔除,保底 2 个。
-  const kept = event.choices.filter(
-    (c) => (findMostSimilarTitle(c.text, usedChoiceTexts)?.score ?? 0) < CHOICE_DUP_THRESHOLD,
-  );
-  if (kept.length >= 2) {
-    event.choices = kept;
-  }
+  // 选项:近乎照抄的直接剔除。若剔除后不足 2 个(退化输出),保留
+  // 碰撞最轻的 2 个——绝不整组原样放行逐字重复(真实扫描曾因此 3 次
+  // 放行「将信息上报给领导，请求指示。」)。全等重复排最后,平分时
+  // 优先保住非全等的那个。
+  const scored = event.choices
+    .map((c) => ({
+      c,
+      score: findMostSimilarTitle(c.text, usedChoiceTexts)?.score ?? 0,
+      // 全等 = 清理标点后与池中某条逐字相同(字符包含关系也会拿 1.0 分,
+      // 但那不算全等)。
+      exact: usedChoiceTexts.some((t) => cleanText(t) === cleanText(c.text)),
+    }))
+    .sort((a, b) => a.score - b.score || Number(a.exact) - Number(b.exact));
+  const kept = scored.filter((s) => s.score < CHOICE_DUP_THRESHOLD);
+  event.choices = (kept.length >= 2 ? kept : scored.slice(0, 2)).map((s) => s.c);
 }
 
 /**

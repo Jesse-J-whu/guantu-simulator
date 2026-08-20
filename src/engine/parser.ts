@@ -40,6 +40,17 @@ function excerpt(content: string): string {
   return `(内容开头:"${flat}" 总长${content.length})`;
 }
 
+/**
+ * 剥离混入选项正文的标签前缀(真实输出偶发「选项A：xxx」「A. xxx」),
+ * 否则前缀会推高选项间相似度并污染去重池。
+ */
+function stripOptionLabel(text: string): string {
+  return text
+    .replace(/^\s*(?:选项)?\s*[A-DＡ-Ｄａ-ｄ]\s*[：:.、]\s*/, '')
+    .replace(/^[（(]\s*[A-DＡ-Ｄ]\s*[）)]\s*/, '')
+    .trim();
+}
+
 /** 解析 "政治嗅觉:+5 执行力:-3 ..." 效果串。 */
 export function parseEffectString(effectStr: string): ChoiceEffect {
   const effect: ChoiceEffect = { politics: 0, execute: 0, network: 0, integrity: 0, promotion: 0 };
@@ -86,11 +97,11 @@ export function parseEvent(content: string, step: number): GameEvent {
     // 输出尤其常见)。正文缺失时回退用提示文字,保住可玩的事件。
     const rawText = fields[`选项${letter}`] || '';
     const hint = fields[`选项${letter}提示`] || '';
-    const text = rawText || hint;
+    const text = stripOptionLabel(rawText || hint);
     if (!text) continue;
     choices.push({
       text,
-      hint: rawText ? hint : '',
+      hint: rawText ? stripOptionLabel(hint) : '',
       effect: parseEffectString(fields[`选项${letter}效果`] || ''),
     });
   }

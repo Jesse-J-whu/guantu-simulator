@@ -39,13 +39,23 @@ describe('文案去重(用户反馈:一局内重复出现相同文案和选项�
     expect(r.reasons.join()).toContain('土地审批风波');
   });
 
-  it('checkEventFreshness:事件内部选项互相重复 → 不新鲜', () => {
+  it('checkEventFreshness:事件内部选项近乎照抄 → 不新鲜', () => {
     const r = checkEventFreshness(
-      { title: '全新事件', choices: mkChoices(['收下这笔好处费', '收下那份好处费', '坚决拒绝']) },
+      { title: '全新事件', choices: mkChoices(['收下这笔好处费', '收下这笔好处费再替他遮掩', '坚决拒绝']) },
       [],
     );
     expect(r.fresh).toBe(false);
     expect(r.reasons.join()).toContain('高度相似');
+  });
+
+  it('checkEventFreshness:选项措辞重叠但意思不同(0.7段) → 放行', () => {
+    // 「这笔/那份」级措辞差异≈0.71,属于正常叙事多样性,不该触发重试
+    // (首轮扫描曾因阈值过严把 18/24 事件打入兜底改写)。
+    const r = checkEventFreshness(
+      { title: '全新事件', choices: mkChoices(['收下这笔好处费', '收下那份好处费', '坚决拒绝']) },
+      [],
+    );
+    expect(r.fresh).toBe(true);
   });
 
   it('checkEventFreshness:选项与此前事件的选项雷同 → 不新鲜(跨事件选项去重)', () => {
@@ -111,7 +121,7 @@ describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)
     enforceFreshness(event, ['暗流涌动']);
     expect(event.title).not.toBe('暗流涌动');
     expect(event.title).toContain('棚改');
-    expect(event.title.length).toBeLessThanOrEqual(16);
+    expect(event.title.length).toBeLessThanOrEqual(18);
   });
 
   it('描述摘句仍撞车时拼类型标签兜底', () => {
@@ -138,15 +148,25 @@ describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)
     expect(event.choices.map((c) => c.text)).not.toContain('主动请缨，连夜准备调研背景材料');
   });
 
-  it('剔除后不足 2 个则原样保留(不能把事件变成不可玩)', () => {
+  it('剔除后不足 2 个:保留碰撞最轻的 2 个,绝不整组原样放行逐字重复', () => {
+    // 真实扫描回归:事件 4 个选项中 3 个与历史雷同时,旧逻辑为保可玩
+    // 整组放行,导致「将信息上报给领导，请求指示。」逐字重复 3 次。
     const event = {
       title: '全新且具体的标题乙',
       desc: '全新描述乙。',
       tagLabel: '日常政务',
-      choices: mkChoices(['主动请缨，连夜准备调研背景材料', '连夜准备调研背景材料，主动请缨']),
+      choices: mkChoices([
+        '将信息上报给领导，请求指示。',
+        '与赵敏进行深入沟通，了解检查的具体内容和要求。',
+        '将信息上报给领导，请求指示。并附上说明',
+        '彻查台账并约谈经办人',
+      ]),
     };
-    enforceFreshness(event, [], ['主动请缨，连夜准备调研背景材料']);
+    enforceFreshness(event, [], ['将信息上报给领导，请求指示。', '与赵敏进行深入沟通，了解检查的具体内容和要求。']);
     expect(event.choices).toHaveLength(2);
+    // 保留下的是碰撞分数最低的两个。
+    expect(event.choices.map((c) => c.text).join('|')).toContain('彻查台账并约谈经办人');
+    expect(event.choices.map((c) => c.text)).not.toContain('将信息上报给领导，请求指示。');
   });
 });
 
