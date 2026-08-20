@@ -151,13 +151,23 @@ export async function nextEvent(
 
   let event: GameEvent | null = null;
   let avoidNote = '';
-  const MAX_ATTEMPTS = 2;
+  const MAX_ATTEMPTS = 3;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const content = await llm.generate(buildEventPrompt({ ...promptParams, avoidNote: avoidNote || undefined }), {
       maxTokens: 1600,
-      temperature: 0.85,
+      temperature: attempt === 0 ? 0.85 : 0.6,
     });
-    const candidate = parseEvent(content, next.step);
+    let candidate: GameEvent;
+    try {
+      candidate = parseEvent(content, next.step);
+    } catch (e) {
+      // 格式违规(缺标记/零选项)在真实上游约7%概率出现:携带纠错说明重试。
+      if (attempt < MAX_ATTEMPTS - 1) {
+        avoidNote = `上次输出未按格式解析(${(e as Error).message}),必须严格按【】标记输出全部字段与四个选项`;
+        continue;
+      }
+      throw e;
+    }
 
     // 1) 职级事实修正。
     const { text: fixedDesc, fixes } = fixRankFacts(candidate.desc);
@@ -169,7 +179,7 @@ export async function nextEvent(
     // 2) 去重检查。
     const freshness = checkEventFreshness(candidate, next.usedTitles);
     if (!freshness.fresh && attempt < MAX_ATTEMPTS - 1) {
-      avoidNote = freshness.reasons.join(';');
+      avoidNote = `与已有事件重复(${freshness.reasons.join(';')}),必须换一个完全不同的切入点`;
       continue;
     }
     if (!freshness.fresh) {

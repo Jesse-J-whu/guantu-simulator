@@ -290,4 +290,29 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
     }
     expect(s.step).toBe(5);
   }, 30000);
+
+  it('格式违规自动重试:前两次输出损坏(零选项/缺标题)→ 第三次成功', async () => {
+    const good = new StepMockLLM();
+    let eventCalls = 0;
+    const flaky: LLMClient = {
+      generate: (prompt, opts) => {
+        if (prompt.includes('官途开局背景')) return good.generate(prompt, opts);
+        eventCalls++;
+        if (eventCalls === 1) return '抱歉，我不能生成这个内容。'; // 拒答:无任何【】标记
+        if (eventCalls === 2) return '【事件类型】daily\n【类型标签】日常政务\n【事件描述】缺标题缺选项的残缺输出'; // 缺【事件标题】
+        return good.generate(prompt, opts);
+      },
+    };
+    let s = createGame('weiban', 'normal', new SeededRandom(2));
+    s = await nextEvent(s, flaky, null, new SeededRandom(1));
+    expect(eventCalls).toBe(3);
+    expect(s.currentEvent!.choices.length).toBeGreaterThanOrEqual(2);
+    expect(s.currentEvent!.title.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('格式违规连续三次 → 仍向上层抛出解析错误(不静默兜底)', async () => {
+    const bad: LLMClient = { generate: () => Promise.resolve('完全无关的输出') };
+    const s = createGame('weiban', 'normal', new SeededRandom(2));
+    await expect(nextEvent(s, bad, null, new SeededRandom(1))).rejects.toThrow(/解析|格式|选项/);
+  }, 30000);
 });
