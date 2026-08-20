@@ -11,6 +11,7 @@ import { MockLLMClient } from '../../src/engine/llm.ts';
 import { SeededRandom } from '../../src/engine/rng.ts';
 import { validateRankFacts } from '../../src/engine/rankRules.ts';
 import { netSum } from '../../src/engine/effects.ts';
+import { isGenericTitle } from '../../src/engine/dedup.ts';
 import type { LLMClient, LLMOptions, GameState } from '../../src/engine/types.ts';
 
 /* ------------------------------------------------------------------ */
@@ -314,5 +315,44 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
     const bad: LLMClient = { generate: () => Promise.resolve('完全无关的输出') };
     const s = createGame('weiban', 'normal', new SeededRandom(2));
     await expect(nextEvent(s, bad, null, new SeededRandom(1))).rejects.toThrow(/解析|格式|选项/);
+  }, 30000);
+
+  it('顽固泛化标题 LLM(永远输出「暗流涌动」)→ 引擎兜底改写,绝不放行套话/重复标题', async () => {
+    // 真实 GLM 扫描实测:glm-4-flash 对套话标题有强先验,3 次重试也可能
+    // 原地打转。引擎必须硬性兜底,而不是接受重复。
+    const stubborn = (n: number): LLMClient => ({
+      generate: async (prompt) => {
+        if (prompt.includes('官途开局背景')) {
+          return new StepMockLLM().generate(prompt);
+        }
+        return [
+          '【事件类型】daily',
+          '【类型标签】日常政务',
+          '【事件标题】暗流涌动',
+          '【剧情衔接】承接上一事件的余波。',
+          `【事件描述】第${n}个完全不同的具体事件:开发区的雨污分流工程验收材料出了纰漏,施工方连夜送来补充说明。`,
+          '【出场人物】王建国(县住建局副局长)',
+          '【官场格言】慎独慎微。',
+          '【选项A】按规范重新核验',
+          '【选项A提示】稳妥',
+          '【选项A效果】政治嗅觉:+4 执行力:+5 人脉资源:0 廉洁度:+3 晋升:0',
+          '【选项B】先签了再说',
+          '【选项B提示】有风险',
+          '【选项B效果】政治嗅觉:-3 执行力:+2 人脉资源:+2 廉洁度:-6 晋升:0',
+        ].join('\n');
+      },
+    });
+    let s = createGame('weiban', 'normal', new SeededRandom(3));
+    s = await generateBackground(s, stubborn(0));
+    for (let i = 0; i < 3; i++) {
+      s = await nextEvent(s, stubborn(i + 1), null, new SeededRandom(i));
+      expect(s.currentEvent!.title, `第${i + 1}步`).not.toBe('暗流涌动');
+      expect(isGenericTitle(s.currentEvent!.title), `第${i + 1}步:${s.currentEvent!.title}`).toBe(false);
+      s = applyChoice(s, 0).state;
+    }
+    // 全局口径:对抗性同质输入下,引擎能保证的是标题全字符串唯一
+    // (幕数兜底);语义级差异依赖生成端多样性,由 StepMockLLM 全流程
+    // 用例的相似度断言覆盖。
+    expect(new Set(s.usedTitles).size).toBe(s.usedTitles.length);
   }, 30000);
 });

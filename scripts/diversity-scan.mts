@@ -19,6 +19,7 @@ import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createGame, generateBackground, nextEvent, applyChoice, finishGame } from '../src/engine/gameEngine.ts';
 import { fixRankFacts } from '../src/engine/rankRules.ts';
+import { isGenericTitle, similarity, TITLE_DUP_THRESHOLD, CHOICE_DUP_THRESHOLD } from '../src/engine/dedup.ts';
 import { DEPARTMENTS } from '../src/engine/departments.ts';
 import type { LLMClient, LLMOptions } from '../src/engine/types.ts';
 import type { RNG } from '../src/engine/rng.ts';
@@ -109,6 +110,8 @@ class RetryLLM implements LLMClient {
 interface EventStat {
   parseOK: boolean;
   choiceCount: number;
+  choiceTexts: string[]; // 选项文案(事后查重口径与引擎一致)
+  titleGeneric: boolean; // 泛化套话标题(暗流涌动类,必须 0)
   continuityPresent: boolean; // 【剧情衔接】字段非空(第 1 步允许开局引入,同样要求非空)
   npcsNamed: number;
   rankFixes: number;
@@ -181,8 +184,8 @@ async function runGame(gameId: number): Promise<GameStat> {
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const ev: EventStat = {
-      parseOK: false, choiceCount: 0, continuityPresent: false, npcsNamed: 0,
-      rankFixes: 0, rankResidual: 0, dedupSuspect: false,
+      parseOK: false, choiceCount: 0, choiceTexts: [], titleGeneric: false, continuityPresent: false,
+      npcsNamed: 0, rankFixes: 0, rankResidual: 0, dedupSuspect: false,
       attrNonZeroChoices: 0, attrZeroChoices: 0, latencyMs: 0, providerErrors: 0, npcReuse: false,
     };
     const knownNames = new Set(state.npcs.map((n) => n.name));
@@ -194,6 +197,8 @@ async function runGame(gameId: number): Promise<GameStat> {
       ev.parseOK = true;
       stat.titles.push(event.title);
       ev.choiceCount = event.choices.length;
+      ev.choiceTexts = event.choices.map((c) => c.text);
+      ev.titleGeneric = isGenericTitle(event.title);
       ev.continuityPresent = (event.continuity || '').trim().length > 0;
       ev.npcsNamed = event.npcs.length;
       ev.dedupSuspect = next.repairs.some((r) => r.kind === 'dedup-retry' && r.detail.includes('仍疑似重复'));
@@ -269,6 +274,27 @@ const goodGames = stats.filter((g) => g.policy === 'good' && g.endingType !== 'A
 const allTitles = stats.flatMap((g) => g.titles);
 const uniqueTitles = new Set(allTitles);
 
+// 局内重复(用户诉求2的直接口径):同一局内标题/选项与此前步骤的
+// 相似度 ≥ 引擎阈值仍被放行的数量,必须为 0。
+let withinTitleDup = 0;
+let withinChoiceDup = 0;
+for (const g of stats) {
+  const seenChoices: string[] = [];
+  g.titles.forEach((title, i) => {
+    // 此前标题比对(含本局全部更早事件)。
+    for (let j = 0; j < i; j++) {
+      if (similarity(g.titles[j], title) >= TITLE_DUP_THRESHOLD) { withinTitleDup++; break; }
+    }
+    const ev = g.events[i];
+    if (ev?.parseOK) {
+      for (const ct of ev.choiceTexts) {
+        if (seenChoices.some((c) => similarity(c, ct) >= CHOICE_DUP_THRESHOLD)) withinChoiceDup++;
+        seenChoices.push(ct);
+      }
+    }
+  });
+}
+
 const summary = {
   startedAt: new Date().toISOString(),
   provider: process.env.GLM_MODEL || 'glm-4-flash',
@@ -291,6 +317,10 @@ const summary = {
   rankFixTotal: events.reduce((s, e) => s + e.rankFixes, 0),
   rankResidualTotal: events.reduce((s, e) => s + e.rankResidual, 0),
   dedupSuspectEvents: events.filter((e) => e.dedupSuspect).length,
+  // 诉求2硬指标:泛化套话标题与局内雷同(标题/选项)放行数,必须全 0。
+  genericTitleEvents: events.filter((e) => e.titleGeneric).length,
+  withinGameTitleDup: withinTitleDup,
+  withinGameChoiceDup: withinChoiceDup,
   crossGameTitleDupRate: `${((100 * (allTitles.length - uniqueTitles.size)) / (allTitles.length || 1)).toFixed(1)}% (${allTitles.length - uniqueTitles.size}/${allTitles.length})`,
   latency: {
     p50: events.map((e) => e.latencyMs).sort((a, b) => a - b)[Math.floor(events.length * 0.5)] || 0,

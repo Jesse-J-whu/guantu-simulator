@@ -18,7 +18,7 @@ import { MathRandom, type RNG } from './rng.ts';
 import { parseEvent, parseBackground } from './parser.ts';
 import { rebalanceEffects, netSum } from './effects.ts';
 import { fixRankFacts } from './rankRules.ts';
-import { checkEventFreshness } from './dedup.ts';
+import { checkEventFreshness, enforceFreshness } from './dedup.ts';
 import { mergeNPCs, buildSummary, addThread } from './storyMemory.ts';
 import {
   gainPromotionPoints,
@@ -152,11 +152,16 @@ export async function nextEvent(
 
   let event: GameEvent | null = null;
   let avoidNote = '';
+  let retryKind: 'format' | 'dedup' | null = null;
   const MAX_ATTEMPTS = 3;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    // 温度分流:格式违规要收敛(0.6),内容撞车要发散(0.95)——
+    // 实测 glm-4-flash 对「暗流涌动」类套话标题有强先验,低温重试只会原地打转。
+    const temperature =
+      attempt === 0 ? 0.85 : retryKind === 'dedup' ? 0.95 : 0.6;
     const content = await llm.generate(buildEventPrompt({ ...promptParams, avoidNote: avoidNote || undefined }), {
       maxTokens: 1600,
-      temperature: attempt === 0 ? 0.85 : 0.6,
+      temperature,
     });
     let candidate: GameEvent;
     try {
@@ -164,6 +169,7 @@ export async function nextEvent(
     } catch (e) {
       // 格式违规(缺标记/零选项)在真实上游约7%概率出现:携带纠错说明重试。
       if (attempt < MAX_ATTEMPTS - 1) {
+        retryKind = 'format';
         avoidNote = `上次输出未按格式解析(${(e as Error).message}),必须严格按【】标记输出全部字段与四个选项`;
         continue;
       }
@@ -180,11 +186,14 @@ export async function nextEvent(
     // 2) 去重检查。
     const freshness = checkEventFreshness(candidate, next.usedTitles, next.usedChoiceTexts);
     if (!freshness.fresh && attempt < MAX_ATTEMPTS - 1) {
-      avoidNote = `与已有事件重复(${freshness.reasons.join(';')}),必须换一个完全不同的切入点`;
+      retryKind = 'dedup';
+      avoidNote = `与已有事件重复(${freshness.reasons.join(';')})。上一个标题已作废,新标题必须换题材和具体要素,严禁再出现同类泛化套话`;
       continue;
     }
     if (!freshness.fresh) {
-      candidate.repairs.push({ kind: 'dedup-retry', detail: `仍疑似重复:${avoidNote}` });
+      // 最终仍撞车:硬性兜底,绝不原样放行重复标题/选项(诉求2)。
+      enforceFreshness(candidate, next.usedTitles, next.usedChoiceTexts, next.step);
+      candidate.repairs.push({ kind: 'dedup-retry', detail: `仍疑似重复,已系统改写:${freshness.reasons.join(';')}` });
     }
 
     // 3) 效果再平衡。

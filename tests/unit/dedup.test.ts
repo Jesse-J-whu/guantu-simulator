@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { similarity, findMostSimilarTitle, checkEventFreshness, ShuffleBag } from '../../src/engine/dedup.ts';
+import {
+  similarity, findMostSimilarTitle, checkEventFreshness, enforceFreshness, isGenericTitle, ShuffleBag,
+} from '../../src/engine/dedup.ts';
 import type { Choice } from '../../src/engine/types.ts';
 
 function mkChoices(texts: string[]): Choice[] {
@@ -72,6 +74,79 @@ describe('文案去重(用户反馈:一局内重复出现相同文案和选项�
     );
     expect(r.fresh).toBe(true);
     expect(r.reasons).toHaveLength(0);
+  });
+});
+
+describe('泛化套话标题识别(真实扫描:暗流涌动在 9 部门复现 14 次)', () => {
+  it('短套话标题被判泛化', () => {
+    for (const t of ['暗流涌动', '深夜的抉择', '午夜的电话', '暗影下的抉择', '档案疑云再起']) {
+      expect(isGenericTitle(t), t).toBe(true);
+    }
+  });
+
+  it('含具体要素的标题不算泛化——即便带套话词', () => {
+    for (const t of ['棚改资金审批的最后一关', '深夜赶写的防汛值班报告', '审计组进驻开发区的前夜']) {
+      expect(isGenericTitle(t), t).toBe(false);
+    }
+  });
+
+  it('checkEventFreshness:泛化标题即使与历史不相似也不新鲜', () => {
+    const r = checkEventFreshness(
+      { title: '暗流涌动', choices: mkChoices(['稳妥处理', '静观其变']) },
+      ['招商引资洽谈'],
+    );
+    expect(r.fresh).toBe(false);
+    expect(r.reasons.join()).toContain('泛化');
+  });
+});
+
+describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)', () => {
+  it('重复标题被改写为描述首句的具体化标题', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '棚改办王主任把一份加急的验收材料放到你桌上。窗外的雨越下越大。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['按流程办理', '先放一放']),
+    };
+    enforceFreshness(event, ['暗流涌动']);
+    expect(event.title).not.toBe('暗流涌动');
+    expect(event.title).toContain('棚改');
+    expect(event.title.length).toBeLessThanOrEqual(16);
+  });
+
+  it('描述摘句仍撞车时拼类型标签兜底', () => {
+    const event = {
+      title: '深夜的抉择',
+      desc: '审计组进驻开发区彻查账目。所有人都屏住了呼吸。',
+      tagLabel: '危机应对',
+      choices: mkChoices(['配合调查', '连夜补材料']),
+    };
+    // 历史标题恰好与摘句相似 → 追加类型标签区分。
+    enforceFreshness(event, ['审计组进驻开发区彻查']);
+    expect(event.title).toContain('危机应对');
+  });
+
+  it('与历史雷同的选项被剔除,保底 2 个', () => {
+    const event = {
+      title: '全新且具体的标题',
+      desc: '全新描述。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['主动请缨，连夜准备调研背景材料', '完全不同的新选项甲', '截然不同的新选项乙', '再一个独立选项丙']),
+    };
+    enforceFreshness(event, [], ['主动请缨，连夜准备调研背景材料']);
+    expect(event.choices).toHaveLength(3);
+    expect(event.choices.map((c) => c.text)).not.toContain('主动请缨，连夜准备调研背景材料');
+  });
+
+  it('剔除后不足 2 个则原样保留(不能把事件变成不可玩)', () => {
+    const event = {
+      title: '全新且具体的标题乙',
+      desc: '全新描述乙。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['主动请缨，连夜准备调研背景材料', '连夜准备调研背景材料，主动请缨']),
+    };
+    enforceFreshness(event, [], ['主动请缨，连夜准备调研背景材料']);
+    expect(event.choices).toHaveLength(2);
   });
 });
 

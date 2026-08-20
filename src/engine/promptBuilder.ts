@@ -102,6 +102,10 @@ export function buildEventPrompt(params: EventPromptParams): string {
     state.usedChoiceTexts.length > 0
       ? state.usedChoiceTexts.slice(-12).map((t, i) => `${i + 1}. ${t.slice(0, 20)}`).join('\n')
       : '（暂无）';
+  // 标题具体要素轮换:每步要求不同维度的具体要素,从供给端打散标题同质化
+  // (实测 glm-4-flash 会无限回归「暗流涌动」这类万能套话标题)。
+  const titleAngles = ['具体项目或工程名称', '具体文件、材料或文书名称', '具体场合或地点', '具体人物身份或称呼', '具体时间节点、期限或数字'];
+  const titleAngle = titleAngles[state.step % titleAngles.length];
 
   return `你是一个精通中国公务员体制的官场模拟器事件生成器。你必须严格遵守中国公务员职级体系，任何职务安排都不能违背现实。
 
@@ -139,6 +143,12 @@ ${storyArcPrompt(state.step, state.maxSteps)}
 ## 已生成事件标题全集（严禁与其中任何一条主题或情节雷同）
 ${usedTitlesBlock}
 
+## 事件标题硬性要求（违反将触发重新生成）
+1. 标题必须包含${titleAngle}作为核心，让读者只看标题就能大致猜到剧情
+2. 严禁使用可套用于任何剧情的泛化套话标题（如「暗流涌动」「深夜的抉择」「午夜的电话」「档案疑云」——这些已被系统拉黑，出现即作废）
+3. 正确示例：「棚改资金审批的最后一关」「领导司机的一句闲话」「审计组进驻的前夜」
+4. 错误示例（全部禁止）：「暗流涌动」「暗影下的抉择」「利益的风波」「深夜来电」
+
 ## 近期已用选项文案（新选项严禁与这些选项意思雷同）
 ${usedChoicesBlock}
 ${avoidNote ? `\n⚠ 上一次生成未通过系统校验：${avoidNote}。` : ''}
@@ -166,7 +176,7 @@ ${ragSection ? `## 真实官员履历参考（增强事件真实感）\n${ragSec
 ## 严格输出格式（用【】标记，不要输出JSON，不要任何解释文字）
 【事件类型】daily/opportunity/temptation/politics/crisis/interpersonal 之一
 【类型标签】中文标签（如"日常政务"）
-【事件标题】8到15字的标题
+【事件标题】8到15字，必须含${titleAngle}等具体要素，禁止泛化套话
 【剧情衔接】一句话说明本事件如何承接上一事件（第一个事件则写开局引入）
 【事件描述】有画面感有冲突的详细描述。可以写多行，直到下一个标记为止
 【出场人物】以分号分隔的人物列表，格式：姓名(职务)，如：王建国(县住建局局长)；李芳(办公室主任)
