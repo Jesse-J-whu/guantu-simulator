@@ -124,7 +124,9 @@ export function checkEventFreshness(
     reasons.push(`标题与"${dup.title}"相似度 ${dup.score.toFixed(2)}`);
   }
   if (isGenericTitle(event.title)) {
-    reasons.push(`标题"${event.title}"是可套用任何剧情的泛化套话`);
+    // 标题长度截断:reasons 会被拼进下一轮提示词,不截断等于把任意长的
+    // LLM 输出原样注入 prompt(注入面有界化)。
+    reasons.push(`标题"${event.title.slice(0, 30)}"是可套用任何剧情的泛化套话`);
   }
   const texts = event.choices.map((c) => c.text);
   // 跨事件选项查重:新选项与历史选项两两比对(诉求:选项卡也不得重复)。
@@ -148,9 +150,9 @@ export function checkEventFreshness(
 /**
  * 最终兜底:重试用尽后仍撞车时,系统直接改写,绝不原样放行重复
  * 标题/选项(诉求2的硬保证)。标题改写为从事件描述摘出的具体场景
- * 短句(仍是 LLM 原创内容,非模板拼凑);雷同选项直接剔除。
- * step 用于极端同质化(LLM 对反馈完全免疫)时的幕数去重——保证标题
- * 全字符串唯一;语义级差异仍依赖生成端供给。
+ * 短句(仍是 LLM 原创内容,非模板拼凑);雷同选项直接剔除,退化输出
+ * (全部撞车)时引擎合成一对互异选项顶上。step 用于极端同质化时的
+ * 幕数去重——保证标题全字符串唯一;语义级差异仍依赖生成端供给。
  */
 export function enforceFreshness(
   event: Pick<GameEvent, 'title' | 'desc' | 'tagLabel' | 'choices'>,
@@ -158,35 +160,51 @@ export function enforceFreshness(
   usedChoiceTexts: readonly string[] = [],
   step = 0,
 ): void {
-  // 标题:与历史雷同或泛化套话 → 用描述首句做具体化标题。
+  // ---------- 标题 ----------
   const titleHit = findMostSimilarTitle(event.title, usedTitles);
   if ((titleHit && titleHit.score >= TITLE_DUP_THRESHOLD) || isGenericTitle(event.title)) {
     const firstSentence = event.desc
       .split(/[。！？!?\n]/)
       .map((s) => s.trim())
       .find((s) => s.length >= 6);
-    // 截断优先落在标点/连接词边界,避免「…老旧小·日常政务」式腰斩。
+    // 截断优先落在标点/连接词边界(含半角标点——mock 与真实输出的逗号
+    // 全半角混用)。取窗口内最后一个边界做前缀(≥6 字才够标题);所有
+    // 边界都太靠前时宁可取短前缀也不腰斩,避免「…把一个厚信」式截断;
+    // 截完剥掉尾部悬挂标点。
     let headline = '';
     if (firstSentence) {
       const window = firstSentence.slice(0, 18);
-      const cut = Math.max(window.lastIndexOf('，'), window.lastIndexOf('、'), window.lastIndexOf('：'));
-      headline = cut >= 8 ? window.slice(0, cut) : window;
+      const boundaries = [...window.matchAll(/[，、：,;:]/g)].map((m) => m.index ?? 0);
+      const cut = boundaries.filter((i) => i >= 6).pop() ?? -1;
+      headline = (cut >= 0 ? window.slice(0, cut) : window)
+        .replace(/[，、：,;:。！？“”「」\s]+$/, '');
     }
-    // 摘句仍撞车(描述也同质化的极端情况)→ 依次叠加类型标签与幕数,
-    // 幕数随步数严格递增,兜底保证全字符串唯一。
-    const collides = (t: string) => {
-      const hit = findMostSimilarTitle(t, usedTitles);
-      return !t || (hit && hit.score >= TITLE_DUP_THRESHOLD);
-    };
-    if (collides(headline)) headline = `${headline || event.title}·${event.tagLabel}`;
-    if (collides(headline)) headline = `${headline}(第${step + 1}幕)`;
-    event.title = headline;
+    // 候选阶梯逐级验证:每个候选都要(a)非空非套话,(b)与全部历史标题
+    // bigram 相似度 < 阈值。此前直接叠加后缀不回头验证,「·标签(第N幕)」
+    // 拼完仍可能 ≥0.55,把自己定义的"必须为0"打穿;描述无可摘短句时还会
+    // 把被封禁的原标题原样嵌进兜底标题。终极候选「第N幕」随步数严格
+    // 递增,结构性唯一,绝不撞车。
+    const acceptable = (t: string) =>
+      !!t &&
+      !isGenericTitle(t) &&
+      (findMostSimilarTitle(t, usedTitles)?.score ?? 0) < TITLE_DUP_THRESHOLD;
+    const candidates = [
+      headline,
+      `${event.tagLabel}·第${step + 1}幕`,
+      `第${step + 1}幕`,
+    ].filter(Boolean) as string[];
+    event.title = candidates.find(acceptable) ?? `第${step + 1}幕`;
   }
-  // 选项:近乎照抄的直接剔除。若剔除后不足 2 个(退化输出),保留
-  // 碰撞最轻的 2 个——绝不整组原样放行逐字重复(真实扫描曾因此 3 次
-  // 放行「将信息上报给领导，请求指示。」)。全等重复排最后,平分时
-  // 优先保住非全等的那个。
-  const scored = event.choices
+  // ---------- 选项 ----------
+  // 事件内部查重:LLM 把同一文案写进两个选项槽(格式回声的常见形态)
+  // 时保留首个,后续照抄槽位剔除。此前只查跨事件池,槽内互抄会原样
+  // 放行两张一模一样的选项卡。
+  const intraKept: GameEvent['choices'] = [];
+  for (const c of event.choices) {
+    const dup = intraKept.some((k) => similarity(k.text, c.text) >= CHOICE_DUP_THRESHOLD);
+    if (!dup) intraKept.push(c);
+  }
+  const scored = intraKept
     .map((c) => ({
       c,
       score: findMostSimilarChoice(c.text, usedChoiceTexts)?.score ?? 0,
@@ -196,7 +214,27 @@ export function enforceFreshness(
     }))
     .sort((a, b) => a.score - b.score || Number(a.exact) - Number(b.exact));
   const kept = scored.filter((s) => s.score < CHOICE_DUP_THRESHOLD);
-  event.choices = (kept.length >= 2 ? kept : scored.slice(0, 2)).map((s) => s.c);
+  if (kept.length >= 2) {
+    event.choices = kept.map((s) => s.c);
+    return;
+  }
+  // 退化输出:干净选项不足 2 个。保留碰撞最轻的原选项绝无出路——旧逻辑
+  // 因此逐字放行过历史重复。改为引擎合成一对互异且与池零碰撞的选项
+  // 文案顶上(效果数值沿用碰撞最轻的选项,"每个选项都有属性变化"不破)。
+  const flavor = (i: number) => {
+    const hint = scored[i]?.c.hint.replace(/\s+/g, '').slice(0, 8);
+    return hint || event.tagLabel;
+  };
+  const base = (i: number) => scored[Math.min(i, scored.length - 1)].c;
+  const pair = [
+    { ...base(0), hint: '', text: `第${step + 1}幕从严处置:${flavor(0)}` },
+    { ...base(1), hint: '', text: `暂缓观察留待第${step + 1}幕再议(${flavor(1)})` },
+  ];
+  event.choices = kept.length === 1 ? [kept[0].c, pair[1]] : pair;
+  // 双保险:合成对内部再验一次(极端 hint 撞车),撞则换第三骨架。
+  if (similarity(event.choices[0].text, event.choices[1].text) >= CHOICE_DUP_THRESHOLD) {
+    event.choices[1] = { ...event.choices[1], text: `以静制动,择机再进(${event.tagLabel})` };
+  }
 }
 
 /**

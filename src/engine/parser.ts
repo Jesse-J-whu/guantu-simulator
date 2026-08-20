@@ -48,7 +48,7 @@ function excerpt(content: string): string {
  */
 function stripOptionLabel(text: string): string {
   return text
-    .replace(/^\s*(?:选项)?\s*[A-DＡ-Ｄａ-ｄ]\s*[：:.、]\s*/, '')
+    .replace(/^\s*(?:选项)?\s*[A-DＡ-Ｄａ-ｄ]\s*[：:.、．]\s*/, '')
     .replace(/^[（(]\s*[A-DＡ-Ｄ]\s*[）)]\s*/, '')
     .replace(/^\s*(?:这个)?选项文字描述\s*[：:]\s*/, '')
     .replace(/^\s*(?:这个选项的)?提示或暗示\s*[：:]\s*/, '')

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   similarity, titleSimilarity, findMostSimilarTitle, findMostSimilarChoice, checkEventFreshness,
-  enforceFreshness, isGenericTitle, ShuffleBag,
+  enforceFreshness, isGenericTitle, TITLE_DUP_THRESHOLD, ShuffleBag,
 } from '../../src/engine/dedup.ts';
 import type { Choice } from '../../src/engine/types.ts';
 
@@ -150,6 +150,59 @@ describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)
     expect(event.title).toContain('危机应对');
   });
 
+  it('标题兜底输出必须自验:绝不放行仍≥阈值或仍泛化的标题(reviewer PoC)', () => {
+    // 对抗样本:历史标题与描述首句几乎相同(描述也同质化的极端情况),
+    // 旧逻辑拼「·标签(第N幕)」后不回头验证,放行了 0.68 的撞车标题。
+    const used = ['开发区的雨污分流工程验收材料出了纰漏'];
+    const event = {
+      title: '暗流涌动',
+      desc: '开发区的雨污分流工程验收材料出了纰漏。施工方连夜送来补充说明。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['按规范重新核验', '先签收再说']),
+    };
+    enforceFreshness(event, used, [], 4);
+    // 自验硬保证:改写后的标题与全部历史标题 bigram 相似度 < 阈值。
+    expect(findMostSimilarTitle(event.title, used)?.score ?? 0).toBeLessThan(TITLE_DUP_THRESHOLD);
+    expect(isGenericTitle(event.title)).toBe(false);
+  });
+
+  it('描述首句本身是套话(深夜来电响起)→ 摘句被拒,换下一级候选', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '深夜来电响起。你在办公室盯着那份材料犹豫要不要接。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['接起电话', '按掉不理']),
+    };
+    enforceFreshness(event, []);
+    expect(event.title).not.toBe('深夜来电响起');
+    expect(isGenericTitle(event.title)).toBe(false);
+  });
+
+  it('描述无合格短句(雨夜。电话。)→ 绝不把被封禁的原标题嵌进兜底标题', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '雨夜。电话。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['接起电话', '按掉不理']),
+    };
+    enforceFreshness(event, []);
+    expect(event.title).not.toContain('暗流涌动');
+    expect(event.title.length).toBeGreaterThan(0);
+  });
+
+  it('半角标点的描述摘句在边界截断,尾部无悬挂标点', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '项目验收现场,施工方老板临走时把一个厚信封塞进你口袋,当晚又发来饭局邀请。',
+      tagLabel: '利益诱惑',
+      choices: mkChoices(['上交纪检', '退还信封']),
+    };
+    enforceFreshness(event, []);
+    // 旧逻辑只认全角标点,mock 的半角逗号导致 18 字腰斩(「…把一个」)。
+    expect(event.title).not.toMatch(/[,，]$/);
+    expect(event.title).not.toContain('把一个');
+  });
+
   it('与历史雷同的选项被剔除,保底 2 个', () => {
     const event = {
       title: '全新且具体的标题',
@@ -181,6 +234,58 @@ describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)
     // 保留下的是碰撞分数最低的两个。
     expect(event.choices.map((c) => c.text).join('|')).toContain('彻查台账并约谈经办人');
     expect(event.choices.map((c) => c.text)).not.toContain('将信息上报给领导，请求指示。');
+  });
+
+  it('事件内部槽位互抄(LLM 把同一文案写进 A/B 槽)→ 照抄槽位被剔除', () => {
+    // reviewer PoC 回归:旧兜底只查跨事件池,槽内互抄会原样放行两张
+    // 一模一样的选项卡。
+    const event = {
+      title: '全新且具体的标题丙',
+      desc: '全新描述丙。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['收下这笔好处费', '收下这笔好处费', '坚决拒绝并上报']),
+    };
+    enforceFreshness(event, []);
+    expect(event.choices).toHaveLength(2);
+    expect(new Set(event.choices.map((c) => c.text)).size).toBe(2);
+  });
+
+  it('退化输出(两个选项全是池内全等重复)→ 引擎合成互异选项,绝不逐字放行', () => {
+    const pool = ['将信息上报给领导，请求指示。', '立即组织人员核实相关情况'];
+    const event = {
+      title: '全新且具体的标题丁',
+      desc: '全新描述丁。',
+      tagLabel: '日常政务',
+      choices: mkChoices(pool),
+    };
+    enforceFreshness(event, [], pool);
+    expect(event.choices).toHaveLength(2);
+    // 硬保证:任一放行选项与历史池的相似度都低于阈值(旧逻辑 1.0 全等放行)。
+    for (const c of event.choices) {
+      expect(findMostSimilarChoice(c.text, pool)?.score ?? 0, `选项「${c.text}」仍与历史雷同`).toBeLessThan(0.8);
+    }
+    expect(new Set(event.choices.map((c) => c.text)).size).toBe(2);
+  });
+
+  it('退化输出(4 个选项仅 1 个干净)→ 干净项保留,第二名绝不再是 1.0 全等', () => {
+    const pool = ['将信息上报给领导，请求指示。', '与赵敏进行深入沟通，了解检查的具体内容和要求。'];
+    const event = {
+      title: '全新且具体的标题戊',
+      desc: '全新描述戊。',
+      tagLabel: '日常政务',
+      choices: mkChoices([
+        '将信息上报给领导，请求指示。',
+        '与赵敏进行深入沟通，了解检查的具体内容和要求。',
+        '将信息上报给领导，请求指示。并附上说明',
+        '牵头成立专班排查整改',
+      ]),
+    };
+    enforceFreshness(event, [], pool);
+    expect(event.choices).toHaveLength(2);
+    expect(event.choices.map((c) => c.text)).toContain('牵头成立专班排查整改');
+    for (const c of event.choices) {
+      expect(findMostSimilarChoice(c.text, pool)?.score ?? 0, `选项「${c.text}」仍与历史雷同`).toBeLessThan(0.8);
+    }
   });
 });
 

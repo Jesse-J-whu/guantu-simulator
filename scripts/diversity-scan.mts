@@ -190,8 +190,12 @@ async function runGame(gameId: number): Promise<GameStat> {
     };
     const knownNames = new Set(state.npcs.map((n) => n.name));
     const t0 = Date.now();
+    const prevRepairs = state.repairs.length;
     try {
       const next = await nextEvent(state, llm, null, rng);
+      // repairs 是全量累积数组,只取本步新增的做统计,否则首个触发事件的
+      // 标记会"粘"到之后每个事件上,指标虚高。
+      const newRepairs = next.repairs.slice(prevRepairs);
       ev.latencyMs = Date.now() - t0;
       const event = next.currentEvent!;
       ev.parseOK = true;
@@ -201,8 +205,8 @@ async function runGame(gameId: number): Promise<GameStat> {
       ev.titleGeneric = isGenericTitle(event.title);
       ev.continuityPresent = (event.continuity || '').trim().length > 0;
       ev.npcsNamed = event.npcs.length;
-      ev.dedupSuspect = next.repairs.some((r) => r.kind === 'dedup-retry' && r.detail.includes('仍疑似重复'));
-      ev.rankFixes = next.repairs.filter((r) => r.kind === 'rank-fix').length;
+      ev.dedupSuspect = newRepairs.some((r) => r.kind === 'dedup-retry' && r.detail.includes('仍疑似重复'));
+      ev.rankFixes = newRepairs.filter((r) => r.kind === 'rank-fix').length;
       // 修正后残留扫描:对修正后的描述再跑一次规则,必须为 0。
       ev.rankResidual = fixRankFacts(event.desc).fixes.length;
       for (const c of event.choices) {
