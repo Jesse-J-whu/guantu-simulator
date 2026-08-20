@@ -1,5 +1,7 @@
 // 静态资源服务 — gzip 压缩 + ETag 协商缓存 + 指纹资源强缓存。
-// 服务目录:优先 dist/(vite 构建产物),开发回退到仓库根(旧版页面)。
+// 只服务 dist/(vite 构建产物)。曾有的"回退仓库根"会连同 .env、
+// server/ 源码与 SQLite 数据库一起暴露(reviewer PoC:GET /.env → 200),
+// 而根 index.html 是 vite 入口,离开 vite 开发服务器本就跑不起来,故删除。
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -27,10 +29,19 @@ const MIME = {
 const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.map']);
 const MIN_COMPRESS_SIZE = 1024;
 
-/** 创建静态服务。 */
+/** 创建静态服务。dist 缺失时一律 503,绝不回退到仓库根(防源码/密钥泄漏)。 */
 function createStaticServer(rootDir) {
-  const distDir = path.join(rootDir, 'dist');
-  const serveFrom = fs.existsSync(path.join(distDir, 'index.html')) ? distDir : rootDir;
+  const serveFrom = path.join(rootDir, 'dist');
+  if (!fs.existsSync(path.join(serveFrom, 'index.html'))) {
+    console.error(`[static] ${serveFrom}/index.html 不存在:请先执行 npm run build。拒绝回退到仓库根。`);
+    return {
+      serveFrom,
+      serve(_req, res) {
+        res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('dist/ missing - run `npm run build` first');
+      },
+    };
+  }
 
   /** 解析安全路径(阻止路径穿越)。 */
   function resolveSafe(urlPath) {

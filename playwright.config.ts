@@ -20,10 +20,10 @@ export default defineConfig({
   },
   projects: [{ name: 'firefox', use: { ...devices['Desktop Firefox'] } }],
   webServer: {
-    command: `rm -f data/e2e.db data/e2e.db-shm data/e2e.db-wal && LLM_MODE=mock PORT=${PORT} WORKERS=1 DB_PATH=data/e2e.db node server.js`,
+    command: `npm run build --silent && rm -f data/e2e.db data/e2e.db-shm data/e2e.db-wal && LLM_MODE=mock PORT=${PORT} WORKERS=1 DB_PATH=data/e2e.db node server.js`,
     url: `http://127.0.0.1:${PORT}/healthz`,
     reuseExistingServer: false,
-    timeout: 30_000,
+    timeout: 60_000,
     stdout: 'ignore',
   },
 });

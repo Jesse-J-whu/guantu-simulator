@@ -84,12 +84,18 @@ describe('事件解析', () => {
     expect(() => parseEvent('没有选项的内容', 0)).toThrow();
   });
 
-  it('键名变体容错:【选项 A】/全角Ａ 与 【选项A】 同键', () => {
+  it('键名变体容错:【选项 A】/全角Ａ/小写a 与 【选项A】 同键', () => {
     const content = buildContent({}).replace(/【选项([AB])】/g, (_m, l) => `【选项 ${l}】`);
     const evt = parseEvent(content, 0);
     expect(evt.choices.length).toBeGreaterThanOrEqual(2);
+    // 全角Ａ:解析不出会只剩 B/C 两个选项,必须仍是 3 个且首个文本正确。
     const fullwidth = buildContent({}).replace(/【选项A】/, '【选项Ａ】');
-    expect(parseEvent(fullwidth, 0).choices.length).toBeGreaterThanOrEqual(1);
+    const fw = parseEvent(fullwidth, 0);
+    expect(fw.choices.length).toBe(3);
+    expect(fw.choices[0].text).toBe('选项A内容');
+    // 小写字母变体(真实输出偶发)。
+    const lower = buildContent({}).replace(/【选项A】/, '【选项a】');
+    expect(parseEvent(lower, 0).choices.length).toBe(3);
   });
 
   it('真实样本(GLM风控安全重试输出):选项正文空、内容在提示字段 → 回退解析', () => {
@@ -113,6 +119,8 @@ describe('事件解析', () => {
     expect(evt.choices.length).toBe(2);
     expect(evt.choices[0].text).toBe('提出自己的看法，争取领导认可');
     expect(evt.choices[0].effect.politics).toBe(5);
+    // 正文为空时提示已挪作正文,hint 必须置空避免同文案出现两遍。
+    expect(evt.choices[0].hint).toBe('');
   });
 
   it('解析错误携带内容摘录(线上诊断)', () => {

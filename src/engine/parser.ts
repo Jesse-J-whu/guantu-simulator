@@ -26,11 +26,12 @@ export function parseMarkerFields(content: string): Record<string, string> {
   return fields;
 }
 
-/** 键名归一:去空白、全角字母转半角(选项A/选项 A/选项Ａ 同键)。 */
+/** 键名归一:去空白、全角/小写字母归一(选项A/选项 A/选项Ａ/选项a 同键)。 */
 function normalizeKey(key: string): string {
   return key
     .replace(/\s+/g, '')
-    .replace(/[Ａ-Ｄａ-ｄ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+    .replace(/[Ａ-Ｄａ-ｄ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[a-d]/g, (c) => c.toUpperCase());
 }
 
 /** 错误消息附内容摘录,便于线上诊断(拒答/跑题/截断一眼可辨)。 */

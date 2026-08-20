@@ -68,7 +68,7 @@ async function refresh() {
     const totalE = endings.reduce((a, e) => a + e.count, 0) || 1;
     const names = { GREAT: '官途圆满', GOOD: '平稳落幕', MID: '调任闲职', MID2: '受到处分', BAD: '落马' };
     document.getElementById('endings').innerHTML = endings.map(e =>
-      '<div style="margin-bottom:10px"><span class="ending-' + endingClass(e.type) + '">' + (names[e.type] || esc(e.type)) +
+      '<div style="margin-bottom:10px"><span class="ending-' + endingClass(e.type) + '">' + (Object.hasOwn(names, e.type) ? names[e.type] : esc(e.type)) +
       ' · ' + e.count + ' (' + pct(e.count/totalE) + ')</span><div class="bar"><div style="width:' +
       (e.count/totalE*100) + '%"></div></div></div>').join('') || '<div class="sub">暂无完结对局</div>';
     document.querySelector('#dept-table tbody').innerHTML = s.sessions.byDept.map(d =>

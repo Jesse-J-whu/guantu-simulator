@@ -15,6 +15,13 @@ let server: ReturnType<typeof createServer>;
 let baseUrl = '';
 const tmpDirs: string[] = [];
 
+// 共享 mock LLM(beforeAll 与各用例的独立 app 实例都要用)。
+const llm = {
+  mode: 'mock' as const,
+  generate: async (prompt: string) =>
+    `【事件标题】测试标题\n【事件描述】${prompt.slice(0, 20)} 描述内容足够长。`,
+};
+
 function get(path: string, headers: Record<string, string> = {}) {
   return fetch(`${baseUrl}${path}`, { headers }).then(async (r) => ({
     status: r.status,
@@ -35,10 +42,6 @@ beforeAll(async () => {
   const dir = mkdtempSync(join(tmpdir(), 'guantu-test-'));
   tmpDirs.push(dir);
   db = openDb(join(dir, 'test.db'));
-  const llm = {
-    mode: 'mock',
-    generate: async (prompt: string) => `【事件标题】测试标题\n【事件描述】${prompt.slice(0, 20)} 描述内容足够长。`,
-  };
   const rootDir = join(__dirname, '../..');
   const handle = createApp({ db, llm, rootDir });
   server = createServer(handle);
@@ -183,5 +186,54 @@ describe('服务端 API 集成测试', () => {
     const r = await fetch(`${baseUrl}/api/llm-proxy`, { method: 'OPTIONS' });
     expect(r.status).toBe(204);
     expect(r.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('TRUST_PROXY 下 XFF 取最右侧:伪造首段无法轮换限流桶', async () => {
+    // 反代追加模式下 `客户端伪造段, 真实IP` —— 若取最左,每次换首段
+    // 就是一个新桶,限流形同虚设(reviewer PoC 实测)。
+    const dir = mkdtempSync(join(tmpdir(), 'guantu-xff-'));
+    tmpDirs.push(dir);
+    const xffDb = openDb(join(dir, 'x.db'));
+    const handle = createApp({
+      db: xffDb, llm, rootDir: join(__dirname, '../..'),
+      trustProxy: true, rateLimitPerMin: 3,
+    });
+    const srv = createServer(handle);
+    await new Promise<void>((resolve) => srv.listen(0, '127.0.0.1', resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === 'string') throw new Error('no address');
+    const u = `http://127.0.0.1:${addr.port}`;
+    const statuses: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const r = await fetch(`${u}/api/track/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-forwarded-for': `9.9.9.${i}, 10.0.0.1` },
+        body: JSON.stringify({ sessionId: `xff-${i}`, deptId: 'jiwei', difficulty: 'easy' }),
+      });
+      statuses.push(r.status);
+    }
+    await new Promise<void>((resolve, reject) => srv.close((err) => (err ? reject(err) : resolve())));
+    xffDb.close();
+    rmSync(dir, { recursive: true, force: true });
+    // 前三次走 10.0.0.1 桶,后两次超限被拒——伪造首段没能开出新桶。
+    expect(statuses).toEqual([200, 200, 200, 429, 429]);
+  });
+
+  it('静态服务绝不回退仓库根:dist 缺失时 503', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'guantu-nodist-'));
+    tmpDirs.push(dir);
+    const nodistDb = openDb(join(dir, 'n.db'));
+    const handle = createApp({ db: nodistDb, llm, rootDir: dir }); // dir 内无 dist/
+    const srv = createServer(handle);
+    await new Promise<void>((resolve) => srv.listen(0, '127.0.0.1', resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === 'string') throw new Error('no address');
+    const r = await fetch(`http://127.0.0.1:${addr.port}/.env`);
+    const body = await r.text();
+    await new Promise<void>((resolve, reject) => srv.close((err) => (err ? reject(err) : resolve())));
+    nodistDb.close();
+    rmSync(dir, { recursive: true, force: true });
+    expect(r.status).toBe(503);
+    expect(body).not.toContain('API_KEY');
   });
 });

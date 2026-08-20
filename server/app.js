@@ -13,11 +13,14 @@ const RATE_LIMIT_PER_MIN = parseInt(process.env.RATE_LIMIT_PER_MIN || '600', 10)
 // 客户端伪造绕过限流并污染 IP 计数统计。
 const TRUST_PROXY = /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || '');
 
-/** 从请求提取客户端 IP(直连或常见反代头)。 */
-function clientIp(req) {
-  if (TRUST_PROXY) {
+/** 从请求提取客户端 IP(直连或常见反代头)。
+ * 取 XFF 最右侧一项:单层可信反代(nginx 默认 proxy_add_x_forwarded_for
+ * 追加模式)写入的才是真实直连地址;取最左会被客户端自带伪造首段
+ * 绕过限流(reviewer PoC:轮换首段 → 每次都是新桶)。 */
+function clientIp(req, trustProxy = TRUST_PROXY) {
+  if (trustProxy) {
     const fwd = req.headers['x-forwarded-for'];
-    if (fwd) return String(fwd).split(',')[0].trim();
+    if (fwd) return String(fwd).split(',').pop().trim();
   }
   return req.socket.remoteAddress || 'unknown';
 }
@@ -72,12 +75,12 @@ function readBody(req) {
   });
 }
 
-/** 创建应用处理器。 */
-function createApp({ db, llm, rootDir }) {
+/** 创建应用处理器。trustProxy/rateLimitPerMin 默认取环境变量,可注入覆盖(测试用)。 */
+function createApp({ db, llm, rootDir, trustProxy = TRUST_PROXY, rateLimitPerMin = RATE_LIMIT_PER_MIN }) {
   const tracker = createTracker(db);
   const visits = new VisitBatchWriter(db);
   const staticServer = createStaticServer(rootDir);
-  const limiter = new RateLimiter(RATE_LIMIT_PER_MIN);
+  const limiter = new RateLimiter(rateLimitPerMin);
 
   function json(res, status, payload) {
     const body = JSON.stringify(payload);
@@ -90,14 +93,22 @@ function createApp({ db, llm, rootDir }) {
 
   const handle = async function handle(req, res) {
     const start = Date.now();
+
+    /** 提前返回(429/400等):先排空请求体再响应。否则 Node 会因
+     * 未消费的请求体销毁 keep-alive 连接,客户端后续管线请求全部报错。 */
+    const early = (status, payload) => {
+      req.resume();
+      return json(res, status, payload);
+    };
+
     let pathname = '/';
     try {
       pathname = new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname;
     } catch {
       // 非法请求行 → 统一按 400 处理(也防外层未捕获的 promise 拒绝)
-      return json(res, 400, { error: 'bad request url' });
+      return early(400, { error: 'bad request url' });
     }
-    const ip = clientIp(req);
+    const ip = clientIp(req, trustProxy);
     const ua = req.headers['user-agent'] || '';
 
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -126,13 +137,6 @@ function createApp({ db, llm, rootDir }) {
       res.end();
       return;
     }
-
-    /** 提前返回(429/400等):先排空请求体再响应。否则 Node 会因
-     * 未消费的请求体销毁 keep-alive 连接,客户端后续管线请求全部报错。 */
-    const early = (status, payload) => {
-      req.resume();
-      return json(res, status, payload);
-    };
 
     try {
       // ---- 健康检查 ----
