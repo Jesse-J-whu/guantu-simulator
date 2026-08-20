@@ -41,13 +41,17 @@ function excerpt(content: string): string {
 }
 
 /**
- * 剥离混入选项正文的标签前缀(真实输出偶发「选项A：xxx」「A. xxx」),
- * 否则前缀会推高选项间相似度并污染去重池。
+ * 剥离混入选项正文的标签/模板回声前缀。真实输出偶发「选项A：xxx」
+ * 「A. xxx」,glm-4-flash 更会把格式说明行原文抄进正文
+ * (「选项文字描述：xxx」「这个选项的提示或暗示:xxx」,探针3实测),
+ * 不剥掉会污染去重池、放大选项间相似度。
  */
 function stripOptionLabel(text: string): string {
   return text
     .replace(/^\s*(?:选项)?\s*[A-DＡ-Ｄａ-ｄ]\s*[：:.、]\s*/, '')
     .replace(/^[（(]\s*[A-DＡ-Ｄ]\s*[）)]\s*/, '')
+    .replace(/^\s*(?:这个)?选项文字描述\s*[：:]\s*/, '')
+    .replace(/^\s*(?:这个选项的)?提示或暗示\s*[：:]\s*/, '')
     .trim();
 }
 
