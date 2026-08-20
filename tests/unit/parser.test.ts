@@ -93,9 +93,12 @@ describe('事件解析', () => {
     const fw = parseEvent(fullwidth, 0);
     expect(fw.choices.length).toBe(3);
     expect(fw.choices[0].text).toBe('选项A内容');
-    // 小写字母变体(真实输出偶发)。
+    // 小写字母变体(真实输出偶发)。断言文本而非数量:正文空时提示回退
+    // 也能凑满 3 个,数量断言测不出归一失效(reviewer 变异验证)。
     const lower = buildContent({}).replace(/【选项A】/, '【选项a】');
-    expect(parseEvent(lower, 0).choices.length).toBe(3);
+    const lw = parseEvent(lower, 0);
+    expect(lw.choices.length).toBe(3);
+    expect(lw.choices[0].text).toBe('选项A内容');
   });
 
   it('真实样本(GLM风控安全重试输出):选项正文空、内容在提示字段 → 回退解析', () => {
