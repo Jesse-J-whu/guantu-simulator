@@ -32,6 +32,11 @@ function buildProviders() {
   return providers;
 }
 
+/** 识别上游内容风控拦截(GLM 1301 / contentFilter / 敏感内容提示)。 */
+function isContentFilterError(message) {
+  return /1301|contentFilter|内容可能|敏感|risk content|content filter/i.test(String(message || ''));
+}
+
 /** 简单熔断器:连续 N 次失败 → 冷却 M 秒。 */
 class Breaker {
   constructor(failureThreshold = 3, cooldownMs = 30000) {
@@ -122,6 +127,7 @@ class LLMService {
 
   /**
    * 对外主入口:按优先级尝试可用上游;mock 模式直接本地生成。
+   * 上游内容风控拦截(GLM 1301 等)时,追加安全基调说明后原上游重试一次。
    * 全部失败时抛出最后一个错误。
    */
   async generate(prompt, params) {
@@ -148,6 +154,19 @@ class LLMService {
           this.metrics.totalTimeMs += Date.now() - start;
           return text;
         } catch (e) {
+          // 内容风控拦截:换正面基调重试一次(同一上游),多数可恢复。
+          if (isContentFilterError(e.message)) {
+            try {
+              const safePrompt = `${prompt}\n\n（重试要求：请以廉洁勤政正面教育为基调重新生成本内容，严格保持原有输出格式，不渲染违规细节。）`;
+              const text = await this.callProvider(provider, safePrompt, params);
+              breaker.recordSuccess();
+              this.metrics.ok++;
+              this.metrics.totalTimeMs += Date.now() - start;
+              return text;
+            } catch (e2) {
+              e = e2;
+            }
+          }
           breaker.recordFailure();
           lastError = e;
           console.error(`[llm] provider ${provider.name} failed: ${e.message}`);
