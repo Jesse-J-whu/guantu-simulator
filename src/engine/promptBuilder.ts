@@ -97,6 +97,11 @@ export function buildEventPrompt(params: EventPromptParams): string {
     state.usedTitles.length > 0
       ? state.usedTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')
       : '（暂无）';
+  // 最近 12 条已用选项文案:防跨事件选项卡雷同(诉求2的选项维度)。
+  const usedChoicesBlock =
+    state.usedChoiceTexts.length > 0
+      ? state.usedChoiceTexts.slice(-12).map((t, i) => `${i + 1}. ${t.slice(0, 20)}`).join('\n')
+      : '（暂无）';
 
   return `你是一个精通中国公务员体制的官场模拟器事件生成器。你必须严格遵守中国公务员职级体系，任何职务安排都不能违背现实。
 
@@ -133,6 +138,9 @@ ${storyArcPrompt(state.step, state.maxSteps)}
 
 ## 已生成事件标题全集（严禁与其中任何一条主题或情节雷同）
 ${usedTitlesBlock}
+
+## 近期已用选项文案（新选项严禁与这些选项意思雷同）
+${usedChoicesBlock}
 ${avoidNote ? `\n⚠ 上一次生成未通过系统校验：${avoidNote}。` : ''}
 
 ## 因果延续硬性要求

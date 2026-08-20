@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -49,7 +49,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await new Promise<void>((resolve) => server.close(resolve));
+  await new Promise<void>((resolve, reject) =>
+    server.close((err) => (err ? reject(err) : resolve())),
+  );
   // 等批量写入器 flush 后再关库。
   const visits = (server as unknown as { _handle?: unknown });
   void visits;
@@ -142,12 +144,38 @@ describe('服务端 API 集成测试', () => {
     expect(html).toContain('id="root"');
   });
 
-  it('路径穿越防护:/../etc/passwd 不泄露系统文件', async () => {
-    const r = await fetch(`${baseUrl}/..%2f..%2fetc%2fpasswd`);
-    expect([200, 400, 403, 404]).toContain(r.status);
-    if (r.status === 200) {
-      const text = await r.text();
-      expect(text).not.toContain('root:');
+  it('路径穿越防护:原始套接字直发 /../etc/passwd 被 403 拒绝(不落入 SPA 回退)', async () => {
+    // fetch/undici 会在客户端先把 /../ 归一化掉,测不到真实攻击面;
+    // 用 node:http 原样发送字节流。
+    const { address, port } = server.address() as { address: string; port: number };
+    const rawGet = (rawPath: string) =>
+      new Promise<{ status: number; body: string }>((resolve) => {
+        const req = request(
+          { host: address === '::' ? '127.0.0.1' : address, port, path: rawPath },
+          (res) => {
+            let body = '';
+            res.on('data', (c) => (body += c));
+            res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+          },
+        );
+        req.end();
+      });
+    const r1 = await rawGet('/..%2f..%2fetc%2fpasswd');
+    expect(r1.status).toBe(403);
+    // %2e%2e 形式会被 URL 规范化在先,到达静态层时已无穿越段;
+    // 允许 SPA 回退 200,但内容绝不能是系统文件。
+    const r2 = await rawGet('/%2e%2e/%2e%2e/etc/passwd');
+    if (r2.status === 200) {
+      expect(r2.body).not.toContain('root:');
+    } else {
+      expect([400, 403, 404]).toContain(r2.status);
+    }
+    // 双重编码不会被二次解码,不得穿越(同上口径)。
+    const r3 = await rawGet('/..%252f..%252fetc%252fpasswd');
+    if (r3.status === 200) {
+      expect(r3.body).not.toContain('root:');
+    } else {
+      expect([400, 403, 404]).toContain(r3.status);
     }
   });
 

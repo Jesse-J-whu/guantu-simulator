@@ -64,10 +64,11 @@ export function findMostSimilarTitle(
   return best;
 }
 
-/** 事件新鲜度检查:标题与历史重复 / 事件内部选项互相重复。 */
+/** 事件新鲜度检查:标题与历史重复 / 选项与历史事件选项重复 / 事件内部选项互相重复。 */
 export function checkEventFreshness(
   event: Pick<GameEvent, 'title' | 'choices'>,
   usedTitles: readonly string[],
+  usedChoiceTexts: readonly string[] = [],
 ): { fresh: boolean; reasons: string[] } {
   const reasons: string[] = [];
   const dup = findMostSimilarTitle(event.title, usedTitles);
@@ -75,6 +76,13 @@ export function checkEventFreshness(
     reasons.push(`标题与"${dup.title}"相似度 ${dup.score.toFixed(2)}`);
   }
   const texts = event.choices.map((c) => c.text);
+  // 跨事件选项查重:新选项与历史选项两两比对(诉求:选项卡也不得重复)。
+  for (let i = 0; i < texts.length; i++) {
+    const hit = findMostSimilarTitle(texts[i], usedChoiceTexts);
+    if (hit && hit.score >= CHOICE_DUP_THRESHOLD) {
+      reasons.push(`选项${i + 1}与此前事件选项"${hit.title.slice(0, 12)}…"雷同(${hit.score.toFixed(2)})`);
+    }
+  }
   for (let i = 0; i < texts.length; i++) {
     for (let j = i + 1; j < texts.length; j++) {
       const s = similarity(texts[i], texts[j]);

@@ -165,6 +165,8 @@ export interface GameState {
   threads: string[];
   /** 已用事件标题(去重池)。 */
   usedTitles: string[];
+  /** 已用选项文案(跨事件选项去重池,最近 N 条滚动)。 */
+  usedChoiceTexts: string[];
   /** 已用叙事指令(去重池)。 */
   usedDirectives: string[];
   /** 剩余叙事指令抽取袋。 */

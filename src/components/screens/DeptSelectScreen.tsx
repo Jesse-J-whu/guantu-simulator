@@ -13,10 +13,10 @@ interface DeptSelectScreenProps {
   onStart: () => void;
 }
 
-const DIFFICULTIES: Array<{ id: Difficulty; name: string; desc: string }> = [
-  { id: 'easy', name: '轻松', desc: '故事向，风险低<br>适合初次体验' },
-  { id: 'normal', name: '标准', desc: '官场常态<br>平衡的挑战' },
-  { id: 'hard', name: '硬核', desc: '高风险高回报<br>命悬一线' },
+const DIFFICULTIES: Array<{ id: Difficulty; name: string; desc: string[] }> = [
+  { id: 'easy', name: '轻松', desc: ['故事向，风险低', '适合初次体验'] },
+  { id: 'normal', name: '标准', desc: ['官场常态', '平衡的挑战'] },
+  { id: 'hard', name: '硬核', desc: ['高风险高回报', '命悬一线'] },
 ];
 
 export function DeptSelectScreen({
@@ -90,7 +90,11 @@ export function DeptSelectScreen({
                 onClick={() => onDifficultyChange(d.id)}
               >
                 <div className="diff-name">{d.name}</div>
-                <div className="diff-desc" dangerouslySetInnerHTML={{ __html: d.desc }} />
+                <div className="diff-desc">
+                  {d.desc.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
               </button>
             ))}
           </div>

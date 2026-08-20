@@ -41,6 +41,12 @@ function renderAdminPage() {
 <script>
 const fmtDur = (ms) => ms > 0 ? (ms/1000/60).toFixed(1) + ' 分钟' : '—';
 const pct = (v) => (v*100).toFixed(1) + '%';
+// 所有来自 /api/stats 的字符串(部门名/难度/职级等)都经玩家可控的
+// /api/track/* 写入,渲染前必须转义,防存储型 XSS。
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+})[c]);
+const endingClass = (t) => /^[A-Z0-9_]+$/.test(t || '') ? t : 'MID';
 async function refresh() {
   try {
     const r = await fetch('/api/stats');
@@ -62,16 +68,16 @@ async function refresh() {
     const totalE = endings.reduce((a, e) => a + e.count, 0) || 1;
     const names = { GREAT: '官途圆满', GOOD: '平稳落幕', MID: '调任闲职', MID2: '受到处分', BAD: '落马' };
     document.getElementById('endings').innerHTML = endings.map(e =>
-      '<div style="margin-bottom:10px"><span class="ending-' + e.type + '">' + (names[e.type] || e.type) +
+      '<div style="margin-bottom:10px"><span class="ending-' + endingClass(e.type) + '">' + (names[e.type] || esc(e.type)) +
       ' · ' + e.count + ' (' + pct(e.count/totalE) + ')</span><div class="bar"><div style="width:' +
       (e.count/totalE*100) + '%"></div></div></div>').join('') || '<div class="sub">暂无完结对局</div>';
     document.querySelector('#dept-table tbody').innerHTML = s.sessions.byDept.map(d =>
-      '<tr><td>' + (d.dept || '—') + '</td><td>' + d.count + '</td><td>' + d.ended + '</td><td>' +
+      '<tr><td>' + esc(d.dept || '—') + '</td><td>' + d.count + '</td><td>' + d.ended + '</td><td>' +
       pct(d.count ? d.ended/d.count : 0) + '</td></tr>').join('');
     document.querySelector('#sessions tbody').innerHTML = s.sessions.recent.map(x =>
-      '<tr><td>' + x.session_id.slice(0, 14) + '…</td><td>' + (x.dept_name || '—') + '</td><td>' +
-      (x.difficulty || '—') + '</td><td>' + x.steps_done + '</td><td>' + x.promotions + '</td><td class="ending-' +
-      x.ending_type + '">' + (x.ending_type || '进行中') + '</td><td>' + (x.final_rank || '—') + '</td><td>' +
+      '<tr><td>' + esc(String(x.session_id || '').slice(0, 14)) + '…</td><td>' + esc(x.dept_name || '—') + '</td><td>' +
+      esc(x.difficulty || '—') + '</td><td>' + x.steps_done + '</td><td>' + x.promotions + '</td><td class="ending-' +
+      endingClass(x.ending_type) + '">' + esc(x.ending_type || '进行中') + '</td><td>' + esc(x.final_rank || '—') + '</td><td>' +
       fmtDur(x.duration_ms) + '</td></tr>').join('');
   } catch (e) { console.error(e); }
 }

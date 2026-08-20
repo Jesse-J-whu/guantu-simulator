@@ -295,7 +295,7 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
     const good = new StepMockLLM();
     let eventCalls = 0;
     const flaky: LLMClient = {
-      generate: (prompt, opts) => {
+      generate: async (prompt, opts) => {
         if (prompt.includes('官途开局背景')) return good.generate(prompt, opts);
         eventCalls++;
         if (eventCalls === 1) return '抱歉，我不能生成这个内容。'; // 拒答:无任何【】标记

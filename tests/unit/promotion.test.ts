@@ -24,7 +24,7 @@ function freshState(overrides: Partial<GameState> = {}): GameState {
 
 describe('晋升绩效点(用户反馈:选了半天级别不变)', () => {
   it('好表现(净正+廉洁)得分高于坏表现(净负)', () => {
-    const good = gainPromotionPoints(zeroEffect({ politics: 4, execute: 3, integrity: 5 }), 'routine', 'normal');
+    const good = gainPromotionPoints(zeroEffect({ politics: 4, execute: 3, integrity: 5 }), 'daily', 'normal');
     const bad = gainPromotionPoints(zeroEffect({ politics: -4, integrity: -5 }), 'crisis', 'normal');
     expect(good).toBeGreaterThan(bad);
     expect(good).toBeGreaterThanOrEqual(3);
@@ -33,10 +33,10 @@ describe('晋升绩效点(用户反馈:选了半天级别不变)', () => {
 
   it('机遇类事件加分;hard 难度打折、easy 加成', () => {
     const eff = zeroEffect({ politics: 3, execute: 2 });
-    const base = gainPromotionPoints(eff, 'routine', 'normal');
+    const base = gainPromotionPoints(eff, 'daily', 'normal');
     expect(gainPromotionPoints(eff, 'opportunity', 'normal')).toBeGreaterThan(base);
-    expect(gainPromotionPoints(eff, 'routine', 'easy')).toBeGreaterThan(base);
-    expect(gainPromotionPoints(eff, 'routine', 'hard')).toBeLessThan(base);
+    expect(gainPromotionPoints(eff, 'daily', 'easy')).toBeGreaterThan(base);
+    expect(gainPromotionPoints(eff, 'daily', 'hard')).toBeLessThan(base);
   });
 
   it('得分非负且粒度为 0.5', () => {

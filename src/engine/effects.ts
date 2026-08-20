@@ -107,12 +107,13 @@ export function rebalanceEffects(
     if (isAllZero(c.effect)) {
       const arch = pool[poolIdx % pool.length];
       poolIdx++;
-      // 幅度加一点随机扰动,避免完全相同。
+      // 幅度加一点随机扰动,避免完全相同;下限 3 保住"可感知变化"契约。
       for (const k of ATTR_KEYS) {
         const base = arch.effect[k];
         if (base === 0) continue;
         const jitter = rng.int(-1, 1);
-        c.effect[k] = Math.max(-10, Math.min(10, base + jitter));
+        const adjusted = base + jitter;
+        c.effect[k] = base > 0 ? Math.max(3, Math.min(10, adjusted)) : Math.min(-3, Math.max(-10, adjusted));
       }
       c.effect.promotion = c.effect.promotion > 0 ? 1 : 0;
       notes.push(`filled-zero:${arch.name}`);

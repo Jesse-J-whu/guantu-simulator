@@ -46,6 +46,25 @@ describe('文案去重(用户反馈:一局内重复出现相同文案和选项�
     expect(r.reasons.join()).toContain('高度相似');
   });
 
+  it('checkEventFreshness:选项与此前事件的选项雷同 → 不新鲜(跨事件选项去重)', () => {
+    const r = checkEventFreshness(
+      { title: '全新标题事件', choices: mkChoices(['主动请缨，连夜准备调研背景材料', '另有新意的选择']) },
+      [],
+      ['主动请缨，连夜准备调研背景材料', '让给同事小刘'],
+    );
+    expect(r.fresh).toBe(false);
+    expect(r.reasons.join()).toContain('雷同');
+  });
+
+  it('checkEventFreshness:选项与历史选项措辞不同 → 新鲜', () => {
+    const r = checkEventFreshness(
+      { title: '全新标题事件', choices: mkChoices(['牵头起草整改方案', '私下约谈施工方']) },
+      [],
+      ['主动请缨，连夜准备调研背景材料', '让给同事小刘'],
+    );
+    expect(r.fresh).toBe(true);
+  });
+
   it('全新标题+互异选项 → 新鲜', () => {
     const r = checkEventFreshness(
       { title: '台风过境抢险', choices: mkChoices(['连夜驻守水库', '按预案转移群众', '向上级求援']) },

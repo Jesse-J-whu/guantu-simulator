@@ -8,6 +8,9 @@
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** 字符串字段截断(防超长 payload 撑爆 DB;留存统计不需要全文)。 */
+const cap = (v, n = 200) => String(v ?? '').slice(0, n);
+
 /** 创建追踪器(每个 worker 一份,持有自己的 db 连接)。 */
 function createTracker(db) {
   const stmts = {
@@ -33,13 +36,13 @@ function createTracker(db) {
       throw new Error('missing sessionId');
     }
     stmts.upsertSession.run({
-      sessionId: body.sessionId,
+      sessionId: cap(body.sessionId, 64),
       now: Date.now(),
       ip: meta.ip,
       ua: meta.ua,
-      deptId: String(body.deptId ?? ''),
-      deptName: String(body.deptName ?? ''),
-      difficulty: String(body.difficulty ?? 'normal'),
+      deptId: cap(body.deptId, 32),
+      deptName: cap(body.deptName, 64),
+      difficulty: cap(body.difficulty, 16),
       maxSteps: Number(body.maxSteps) || 24,
     });
     return { ok: true };
@@ -50,19 +53,19 @@ function createTracker(db) {
       throw new Error('missing sessionId');
     }
     stmts.insertChoice.run(
-      body.sessionId,
+      cap(body.sessionId, 64),
       Number(body.step) || 0,
       Number(body.year) || null,
-      String(body.eventTitle ?? ''),
-      String(body.eventTag ?? ''),
-      String(body.choiceText ?? ''),
+      cap(body.eventTitle),
+      cap(body.eventTag, 32),
+      cap(body.choiceText),
       JSON.stringify(body.effects ?? {}),
       JSON.stringify(body.attrsAfter ?? {}),
       Number(body.rankAfter) || 0,
       body.promoted ? 1 : 0,
       Date.now(),
     );
-    stmts.touchSession.run(Date.now(), body.sessionId);
+    stmts.touchSession.run(Date.now(), cap(body.sessionId, 64));
     return { ok: true };
   }
 
@@ -73,13 +76,14 @@ function createTracker(db) {
     stmts.finishSession.run(
       Date.now(),
       Number(body.stepsDone) || 0,
-      String(body.finalRank ?? ''),
-      String(body.endingType ?? ''),
+      cap(body.finalRank, 64),
+      cap(body.endingType, 16),
       Number(body.promotions) || 0,
       JSON.stringify(body.attrs ?? {}),
-      JSON.stringify(body.timeline ?? []),
+      // 时间线可能较大(24 步),放宽到 32KB,超出部分截断。
+      JSON.stringify(body.timeline ?? []).slice(0, 32768),
       Number(body.durationMs) || 0,
-      body.sessionId,
+      cap(body.sessionId, 64),
     );
     return { ok: true };
   }

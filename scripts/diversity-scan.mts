@@ -86,8 +86,11 @@ class ProxyHttpLLM implements LLMClient {
 
 /** 带 429/5xx 退避重试的 LLM 客户端包装(内容风控由服务端安全重试兜底)。 */
 class RetryLLM implements LLMClient {
-  constructor(private readonly inner: LLMClient) {}
+  private readonly inner: LLMClient;
   retries = 0;
+  constructor(inner: LLMClient) {
+    this.inner = inner;
+  }
   async generate(prompt: string, opts: LLMOptions = {}): Promise<string> {
     for (let attempt = 0; ; attempt++) {
       try {
@@ -171,7 +174,7 @@ async function runGame(gameId: number): Promise<GameStat> {
   // 开局背景。
   try {
     state = await generateBackground(state, llm);
-    stat.bgOk = (state.background || '').length >= 30;
+    stat.bgOk = (state.background?.openingText || '').length >= 30;
   } catch (e) {
     console.log(`[game ${gameId}] 背景生成失败(用兜底): ${String((e as Error).message).slice(0, 80)}`);
   }
@@ -225,7 +228,7 @@ async function runGame(gameId: number): Promise<GameStat> {
   stat.reusedNPCs = state.npcs.filter((n) => n.appearances >= 2).length;
   if (state.step >= state.maxSteps) {
     const ending = finishGame(state);
-    stat.endingType = ending.tier;
+    stat.endingType = ending.endingType;
     stat.finalRank = state.dept.ranks[Math.min(state.rank, state.dept.ranks.length - 1)];
   } else {
     stat.endingType = 'ABORTED';

@@ -96,7 +96,9 @@ export class RagRetriever {
     const parts: string[] = [];
     const cases = this.getCases(deptId, gameRank, 2);
     if (cases.length > 0) {
-      parts.push('【同级真实官员任职参考】');
+      // 注意:档案库没有科级条目,科级玩家会取到处级案例——仅作履历写法
+      // 与职务体系的风格参考,不得照抄其级别(否则加剧职级虚高)。
+      parts.push('【真实官员履历参考（仅风格参考，人物级别以本文职级规则表为准）】');
       cases.forEach((c, i) => {
         let line = `${i + 1}. ${c.name}：${c.level ?? ''}，${c.position ?? ''}（${c.org ?? ''}）`;
         if (c.area && !c.area.includes('nan')) line += `，${c.area}`;

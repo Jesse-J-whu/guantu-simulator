@@ -34,10 +34,17 @@ function createStaticServer(rootDir) {
 
   /** 解析安全路径(阻止路径穿越)。 */
   function resolveSafe(urlPath) {
-    let p = decodeURIComponent(urlPath.split('?')[0]);
+    let p;
+    try {
+      p = decodeURIComponent(urlPath.split('?')[0]);
+    } catch {
+      return null; // 非法百分号编码(如 /%zz)按不存在处理
+    }
     if (p.endsWith('/')) p += 'index.html';
     const abs = path.resolve(serveFrom, '.' + p);
-    if (!abs.startsWith(serveFrom)) return null;
+    // 必须命中目录本身或其下带分隔符的子路径:裸 startsWith 会放行
+    // 兄弟目录(serveFrom=/x/dist 时 /x/distX/secret 也会通过)。
+    if (abs !== serveFrom && !abs.startsWith(serveFrom + path.sep)) return null;
     return abs;
   }
 

@@ -83,6 +83,7 @@ export function createGame(
     summary: '（刚踏上官途）',
     threads: [],
     usedTitles: [],
+    usedChoiceTexts: [],
     usedDirectives: [],
     directiveBag: rng.shuffle(NARRATIVE_DIRECTIVES.map((d) => d.text)),
     usedThemes: [],
@@ -177,7 +178,7 @@ export async function nextEvent(
     }
 
     // 2) 去重检查。
-    const freshness = checkEventFreshness(candidate, next.usedTitles);
+    const freshness = checkEventFreshness(candidate, next.usedTitles, next.usedChoiceTexts);
     if (!freshness.fresh && attempt < MAX_ATTEMPTS - 1) {
       avoidNote = `与已有事件重复(${freshness.reasons.join(';')}),必须换一个完全不同的切入点`;
       continue;
@@ -199,6 +200,11 @@ export async function nextEvent(
 
   // 4) 更新故事记忆。
   next.usedTitles.push(event.title);
+  // 跨事件选项去重池:只保留最近 60 条(24 步 × 4 选项,滚动窗口足够)。
+  for (const c of event.choices) next.usedChoiceTexts.push(c.text);
+  if (next.usedChoiceTexts.length > 60) {
+    next.usedChoiceTexts.splice(0, next.usedChoiceTexts.length - 60);
+  }
   mergeNPCs(next, event, next.step);
   next.currentEvent = event;
   next.repairs.push(...event.repairs);
@@ -210,6 +216,7 @@ export async function nextEvent(
  * 返回新状态 + 即时反馈数据。
  */
 export function applyChoice(state: GameState, choiceIdx: number): ApplyResult {
+  if (state.ended) throw new Error('对局已结束,不能再作选择');
   const next = structuredClone(state);
   const event = next.currentEvent;
   if (!event) throw new Error('当前没有事件');

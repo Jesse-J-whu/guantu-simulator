@@ -9,11 +9,16 @@ const { renderAdminPage } = require('./adminPage.js');
 
 const BODY_LIMIT = 2 * 1024 * 1024; // 2MB:轨迹上报可能较大
 const RATE_LIMIT_PER_MIN = parseInt(process.env.RATE_LIMIT_PER_MIN || '600', 10);
+// 仅当部署在可信反代之后才信任 X-Forwarded-For,否则该头可被任意
+// 客户端伪造绕过限流并污染 IP 计数统计。
+const TRUST_PROXY = /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || '');
 
 /** 从请求提取客户端 IP(直连或常见反代头)。 */
 function clientIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  if (fwd) return String(fwd).split(',')[0].trim();
+  if (TRUST_PROXY) {
+    const fwd = req.headers['x-forwarded-for'];
+    if (fwd) return String(fwd).split(',')[0].trim();
+  }
   return req.socket.remoteAddress || 'unknown';
 }
 
@@ -85,8 +90,13 @@ function createApp({ db, llm, rootDir }) {
 
   const handle = async function handle(req, res) {
     const start = Date.now();
-    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    const pathname = url.pathname;
+    let pathname = '/';
+    try {
+      pathname = new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname;
+    } catch {
+      // 非法请求行 → 统一按 400 处理(也防外层未捕获的 promise 拒绝)
+      return json(res, 400, { error: 'bad request url' });
+    }
     const ip = clientIp(req);
     const ua = req.headers['user-agent'] || '';
 
