@@ -81,11 +81,15 @@ export function parseEvent(content: string, step: number): GameEvent {
 
   const choices: Choice[] = [];
   for (const letter of ['A', 'B', 'C', 'D']) {
-    const text = fields[`选项${letter}`];
+    // 真实上游偶发把选项正文留空、把内容写进提示字段(风控安全重试的
+    // 输出尤其常见)。正文缺失时回退用提示文字,保住可玩的事件。
+    const rawText = fields[`选项${letter}`] || '';
+    const hint = fields[`选项${letter}提示`] || '';
+    const text = rawText || hint;
     if (!text) continue;
     choices.push({
       text,
-      hint: fields[`选项${letter}提示`] || '',
+      hint: rawText ? hint : '',
       effect: parseEffectString(fields[`选项${letter}效果`] || ''),
     });
   }
