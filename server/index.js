@@ -53,7 +53,10 @@ if (cluster.isPrimary && numWorkers > 1) {
   server.keepAliveTimeout = 65000;
   server.headersTimeout = 70000;
   server.requestTimeout = 120000;
-  server.maxRequestsPerSocket = 1000;
+  // 不限制单 socket 请求数:设 1000 时长连接压测/长会话轮询会在第 1001 个
+  // 请求起收到 Node 自动回复的 503(实测 autocannon 20 连接恰好 20000 个 2xx
+  // 后全部 503)。keep-alive 由 keepAliveTimeout 管理即可。
+  server.maxRequestsPerSocket = 0;
 
   server.listen(PORT, () => {
     const hasDist = require('node:fs').existsSync(path.join(ROOT_DIR, 'dist', 'index.html'));

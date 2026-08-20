@@ -96,6 +96,11 @@ function createApp({ db, llm, rootDir }) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
     res.on('finish', () => {
+      // 只记录页面/API 访问;静态资源(/assets/*、favicon 等)与探活
+      // 请求量级是页面访问的成百上千倍,逐条入库只会制造写放大。
+      if (pathname.startsWith('/assets/') || pathname === '/healthz' || pathname === '/favicon.ico') {
+        return;
+      }
       visits.push({
         ts: Date.now(),
         ip,
@@ -111,6 +116,13 @@ function createApp({ db, llm, rootDir }) {
       res.end();
       return;
     }
+
+    /** 提前返回(429/400等):先排空请求体再响应。否则 Node 会因
+     * 未消费的请求体销毁 keep-alive 连接,客户端后续管线请求全部报错。 */
+    const early = (status, payload) => {
+      req.resume();
+      return json(res, status, payload);
+    };
 
     try {
       // ---- 健康检查 ----
@@ -131,21 +143,21 @@ function createApp({ db, llm, rootDir }) {
 
       // ---- 留存上报 ----
       if (pathname.startsWith('/api/track/') && req.method === 'POST') {
-        if (!limiter.allow(ip)) return json(res, 429, { error: 'too many requests' });
+        if (!limiter.allow(ip)) return early(429, { error: 'too many requests' });
         const body = await readBody(req);
         const meta = { ip, ua: String(ua).slice(0, 250) };
         if (pathname === '/api/track/start') return json(res, 200, tracker.trackStart(body, meta));
         if (pathname === '/api/track/choice') return json(res, 200, tracker.trackChoice(body));
         if (pathname === '/api/track/end') return json(res, 200, tracker.trackEnd(body));
-        return json(res, 404, { error: 'unknown track endpoint' });
+        return early(404, { error: 'unknown track endpoint' });
       }
 
       // ---- LLM 代理 ----
       if (pathname === '/api/llm-proxy' && req.method === 'POST') {
-        if (!limiter.allow(ip)) return json(res, 429, { error: 'too many requests' });
+        if (!limiter.allow(ip)) return early(429, { error: 'too many requests' });
         const body = await readBody(req);
         if (!body.prompt || typeof body.prompt !== 'string') {
-          return json(res, 400, { error: 'Missing prompt' });
+          return early(400, { error: 'Missing prompt' });
         }
         const content = await llm.generate(body.prompt, {
           maxTokens: Math.min(4000, Number(body.max_tokens) || 1600),
@@ -160,10 +172,10 @@ function createApp({ db, llm, rootDir }) {
         return staticServer.serve(req, res, pathname);
       }
 
-      return json(res, 405, { error: 'method not allowed' });
+      return early(405, { error: 'method not allowed' });
     } catch (e) {
       console.error(`[app] ${req.method} ${pathname} error:`, e.message);
-      return json(res, e.message === 'body too large' ? 413 : 500, { error: e.message });
+      return early(e.message === 'body too large' ? 413 : 500, { error: e.message });
     }
   };
 

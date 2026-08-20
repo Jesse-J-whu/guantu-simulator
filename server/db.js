@@ -60,11 +60,31 @@ function openDb(dbPath) {
   const resolved = path.resolve(dbPath);
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
   const db = new DatabaseSync(resolved);
-  db.exec('PRAGMA journal_mode = WAL;');
-  db.exec('PRAGMA busy_timeout = 5000;');
+  // 顺序很重要:busy_timeout 必须最先设置——多 worker 同时启动时,
+  // journal_mode=WAL 与建表都需要写锁,没有 busy_timeout 会立即抛
+  // "database is locked" 导致 worker 启动崩溃循环。
+  db.exec('PRAGMA busy_timeout = 8000;');
+  execWithRetry(db, 'PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA synchronous = NORMAL;');
-  db.exec(SCHEMA);
+  execWithRetry(db, SCHEMA);
   return db;
+}
+
+/** 带退避重试的 exec(应对多 worker 并发建库时的瞬时锁)。 */
+function execWithRetry(db, sql, attempts = 10) {
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      db.exec(sql);
+      return;
+    } catch (e) {
+      lastErr = e;
+      const wait = Math.min(200, 10 * (i + 1));
+      const until = Date.now() + wait;
+      while (Date.now() < until) { /* 同步退避 */ }
+    }
+  }
+  throw lastErr;
 }
 
 /** 访问日志批量写入器:内存排队,按批次落库,压测下不阻塞请求线程。 */
@@ -90,19 +110,26 @@ class VisitBatchWriter {
   flush() {
     if (this.queue.length === 0) return;
     const rows = this.queue.splice(0, this.queue.length);
-    try {
-      this.db.exec('BEGIN');
-      for (const r of rows) {
-        this.insert.run(r.ts, r.ip, r.ua, r.path, r.status, r.durationMs);
-      }
-      this.db.exec('COMMIT');
-    } catch (e) {
+    // BEGIN IMMEDIATE:直接取写锁,避免 deferred 事务并发升级死锁。
+    // 失败整批重试,多次失败则丢弃该批(访问日志允许有损,不能阻塞服务)。
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        this.db.exec('ROLLBACK');
-      } catch {
-        /* ignore */
+        this.db.exec('BEGIN IMMEDIATE');
+        for (const r of rows) {
+          this.insert.run(r.ts, r.ip, r.ua, r.path, r.status, r.durationMs);
+        }
+        this.db.exec('COMMIT');
+        return;
+      } catch (e) {
+        try {
+          this.db.exec('ROLLBACK');
+        } catch {
+          /* 事务可能未开启 */
+        }
+        if (attempt === 2) {
+          console.error('[db] visit batch write failed (dropped):', e.message);
+        }
       }
-      console.error('[db] visit batch write failed:', e.message);
     }
   }
 
