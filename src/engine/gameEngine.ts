@@ -216,10 +216,13 @@ export async function nextEvent(
 
   // 4) 更新故事记忆。
   next.usedTitles.push(event.title);
-  // 跨事件选项去重池:只保留最近 60 条(24 步 × 4 选项,滚动窗口足够)。
+  // 跨事件选项去重池:上限 200(一局 24 步 × 4 选项 = 96,留足余量)。
+  // 曾用 60 条滚动窗口——第 15 步起早期文案被挤出池,与开局选项的包含式
+  // 照抄(实测 1.00 全等)查不出来,8 局确认扫描捕获 3 例。提示词只取
+  // 最近 12 条,池本身仅用于内存比对,扩大无成本。
   for (const c of event.choices) next.usedChoiceTexts.push(c.text);
-  if (next.usedChoiceTexts.length > 60) {
-    next.usedChoiceTexts.splice(0, next.usedChoiceTexts.length - 60);
+  if (next.usedChoiceTexts.length > 200) {
+    next.usedChoiceTexts.splice(0, next.usedChoiceTexts.length - 200);
   }
   mergeNPCs(next, event, next.step);
   next.currentEvent = event;

@@ -120,6 +120,14 @@ class LLMService {
       text = text.replace(/<think[\s\S]*?<\/think>/gi, '').replace(/<think[\s\S]*$/gi, '').trim();
       if (!text) throw new Error(`upstream ${provider.name} returned empty content`);
       return text;
+    } catch (e) {
+      // 60s 超时 abort 的原始消息是「This operation was aborted」,不含
+      // timeout 字样,调用方的重试正则匹配不上,会把瞬时超时当成致命错误
+      // 中断整局(8 局确认扫描实测)。统一改写成可识别的超时语义。
+      if (e && typeof e === 'object' && e.name === 'AbortError') {
+        throw new Error(`upstream ${provider.name} timeout after ${UPSTREAM_TIMEOUT_MS}ms`);
+      }
+      throw e;
     } finally {
       clearTimeout(timer);
     }

@@ -279,6 +279,43 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
     expect(state.promotions.length).toBeLessThanOrEqual(2);
   }, 30000);
 
+  it('跨事件选项去重池覆盖整局:24步×4选项=96条全程可查(60截断回归)', async () => {
+    // 8 局真实 GLM 确认扫描捕获:池曾截断到 60,第 15 步起开局选项被挤出,
+    // 与早期文案 1.00 全等的照抄照样放行(withinGameChoiceDup ×3)。
+    // 用 96 条两两零字符重叠的选项文案(字符集切片构造,相似度恒为 0,
+    // 不触发放重干预)驱动完整 24 步,断言池不发生截断。
+    const POOL_CHARS = '的一是在了我不有和人这中大为上个国以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手信处再真么话';
+    // 步长 2 的滚动窗口:相邻两串最多共享 2/4 字符(相似度 0.5 < 0.8),
+    // 跨槽位/跨步的窗口互不重叠(相似度 0),不触发放重干预。
+    const uniqueText = (k: number) => POOL_CHARS.slice(k * 2, k * 2 + 4);
+    const uniqueMock: LLMClient = {
+      generate: async (prompt, opts) => {
+        const raw = await new StepMockLLM().generate(prompt, opts);
+        const m = prompt.match(/第(\d+)步/);
+        const step = m ? parseInt(m[1], 10) - 1 : 0;
+        let i = 0;
+        return raw.replace(/【选项([A-D])】.+/g, (_s, letter: string) => {
+          const text = uniqueText(step * 4 + i);
+          i++;
+          return `【选项${letter}】${text}`;
+        });
+      },
+    };
+    let s = createGame('weiban', 'normal', new SeededRandom(2));
+    s = await generateBackground(s, uniqueMock);
+    const firstStepTexts: string[] = [];
+    for (let i = 0; i < DEFAULT_MAX_STEPS; i++) {
+      s = await nextEvent(s, uniqueMock, null, new SeededRandom(i));
+      if (i === 0) firstStepTexts.push(...s.currentEvent!.choices.map((c) => c.text));
+      s = applyChoice(s, 0).state;
+    }
+    expect(s.usedChoiceTexts.length).toBe(DEFAULT_MAX_STEPS * 4);
+    // 开局文案在终局仍可查(60 截断时第 15 步起即被挤出)。
+    for (const t of firstStepTexts) {
+      expect(s.usedChoiceTexts).toContain(t);
+    }
+  }, 30000);
+
   it('MockLLMClient(引擎自带):连续生成不抛错且可解析', async () => {
     const llm = new MockLLMClient();
     let s = createGame('fuban', 'normal', new SeededRandom(11));

@@ -98,7 +98,7 @@ class RetryLLM implements LLMClient {
         return await this.inner.generate(prompt, opts);
       } catch (e) {
         const msg = String((e as Error).message || e);
-        const retriable = /429|5\d\d|408|fetch failed|ECONNRESET|timeout|terminated/i.test(msg);
+        const retriable = /429|5\d\d|408|fetch failed|ECONNRESET|timeout|terminated|abort/i.test(msg);
         if (!retriable || attempt >= 4) throw e;
         this.retries++;
         await new Promise((r) => setTimeout(r, 2000 * (attempt + 1) + Math.random() * 1000));
