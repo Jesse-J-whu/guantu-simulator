@@ -18,7 +18,7 @@ import { MathRandom, type RNG } from './rng.ts';
 import { parseEvent, parseBackground } from './parser.ts';
 import { rebalanceEffects, netSum } from './effects.ts';
 import { fixRankFacts } from './rankRules.ts';
-import { checkEventFreshness, enforceFreshness } from './dedup.ts';
+import { checkEventFreshness, enforceFreshness, findMostSimilarChoice, CHOICE_DUP_THRESHOLD } from './dedup.ts';
 import { mergeNPCs, buildSummary, addThread } from './storyMemory.ts';
 import {
   gainPromotionPoints,
@@ -153,7 +153,7 @@ export async function nextEvent(
   let event: GameEvent | null = null;
   let avoidNote = '';
   let retryKind: 'format' | 'dedup' | null = null;
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 4;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     // 温度分流:格式违规要收敛(0.6),内容撞车要发散(0.95)——
     // 实测 glm-4-flash 对「暗流涌动」类套话标题有强先验,低温重试只会原地打转。
@@ -187,7 +187,14 @@ export async function nextEvent(
     const freshness = checkEventFreshness(candidate, next.usedTitles, next.usedChoiceTexts);
     if (!freshness.fresh && attempt < MAX_ATTEMPTS - 1) {
       retryKind = 'dedup';
-      avoidNote = `与已有事件重复(${freshness.reasons.join(';')})。上一个标题已作废,新标题必须换题材和具体要素,严禁再出现同类泛化套话`;
+      // 末次重试点名列出撞车的选项文案:glm-4-flash 对程序性套话
+      // (「立即组织核实」「上报请求指示」)有强先验,不点名会原样重发。
+      const bannedChoices = candidate.choices
+        .filter((c) => (findMostSimilarChoice(c.text, next.usedChoiceTexts)?.score ?? 0) >= CHOICE_DUP_THRESHOLD)
+        .map((c) => `「${c.text.slice(0, 20)}」`);
+      avoidNote = `与已有事件重复(${freshness.reasons.join(';')})。上一个标题已作废,新标题必须换题材和具体要素,严禁再出现同类泛化套话${
+        bannedChoices.length > 0 ? `。以下选项文案已出现过,严禁原样或微调后再输出:${bannedChoices.join('')}` : ''
+      }`;
       continue;
     }
     if (!freshness.fresh) {

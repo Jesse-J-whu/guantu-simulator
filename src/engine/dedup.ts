@@ -32,8 +32,8 @@ function jaccard<T>(a: Set<T>, b: Set<T>): number {
 
 /**
  * 文本相似度(0-1):bigram Jaccard 与字符重叠系数(inter/min)取较大者。
- * 纯 bigram 对短标题不敏感(6字标题改2字仅 0.33),掺入字符级重叠
- * 才能抓住"拆迁户集体上访/拆迁户联名上访"这类换汤不换药重复。
+ * 用于选项文案:字符包含(「提出解决方案」⊂「…等待他人提出解决方案。」)
+ * 也算照抄,必须抓住。
  */
 export function similarity(a: string, b: string): number {
   const bigramScore = jaccard(bigrams(a), bigrams(b));
@@ -46,12 +46,22 @@ export function similarity(a: string, b: string): number {
 }
 
 /**
- * 标题重复判定阈值。0.72 ≈ 换几个字仍算重复(实测「拆迁户集体上访/
- * 拆迁户联名上访」0.71)。低于此的 0.45-0.7 段是同一故事线的不同事件
- * (连续性系统本来就要求反复围绕同一项目/人物展开),不算重复——
- * 首轮真实扫描用 0.45 时 18/24 事件被误判,标题被兜底改写得面目全非。
+ * 标题相似度:只用词组级 bigram Jaccard。字符重叠会把「老城区改造项目
+ * 会议」(7字)判成任何提到该项目的长标题的 1.0 子串——但围绕同一项目
+ * 展开正是连续性系统的设计,不是重复文案。bigram 级:「暗流涌动」vs
+ * 「暗流涌动再现」=0.60(重复),「老城区改造项目会议」vs「2020年，老城
+ * 区改造项目终于迎来了…」≈0.25(同弧不同事件,放行)。
  */
-export const TITLE_DUP_THRESHOLD = 0.72;
+export function titleSimilarity(a: string, b: string): number {
+  return jaccard(bigrams(a), bigrams(b));
+}
+
+/**
+ * 标题重复判定阈值(bigram 口径)。0.55 ≈ 换尾缀仍算重复
+ * (「暗流涌动」vs「暗流涌动再现」0.60、「深夜的抉择」vs「午夜的抉择」
+ * 0.60);同弧不同事件(0.2-0.4)放行。
+ */
+export const TITLE_DUP_THRESHOLD = 0.55;
 
 /**
  * 选项重复判定阈值。0.8 = 只拦截近乎照抄(字符包含/全等);叙述性
@@ -76,14 +86,27 @@ export function isGenericTitle(title: string): boolean {
   return clean.length <= GENERIC_TITLE_MAX_LEN && GENERIC_TITLE_WORDS.test(clean);
 }
 
-/** 在历史标题里找最相似的一条。 */
+/** 在历史标题里找最相似的一条(标题口径:bigram-only)。 */
 export function findMostSimilarTitle(
   title: string,
   usedTitles: readonly string[],
 ): { title: string; score: number } | null {
   let best: { title: string; score: number } | null = null;
   for (const t of usedTitles) {
-    const score = similarity(title, t);
+    const score = titleSimilarity(title, t);
+    if (!best || score > best.score) best = { title: t, score };
+  }
+  return best;
+}
+
+/** 在历史选项文案里找最相似的一条(选项口径:含字符包含)。 */
+export function findMostSimilarChoice(
+  text: string,
+  usedChoices: readonly string[],
+): { title: string; score: number } | null {
+  let best: { title: string; score: number } | null = null;
+  for (const t of usedChoices) {
+    const score = similarity(text, t);
     if (!best || score > best.score) best = { title: t, score };
   }
   return best;
@@ -106,7 +129,7 @@ export function checkEventFreshness(
   const texts = event.choices.map((c) => c.text);
   // 跨事件选项查重:新选项与历史选项两两比对(诉求:选项卡也不得重复)。
   for (let i = 0; i < texts.length; i++) {
-    const hit = findMostSimilarTitle(texts[i], usedChoiceTexts);
+    const hit = findMostSimilarChoice(texts[i], usedChoiceTexts);
     if (hit && hit.score >= CHOICE_DUP_THRESHOLD) {
       reasons.push(`选项${i + 1}与此前事件选项"${hit.title.slice(0, 12)}…"雷同(${hit.score.toFixed(2)})`);
     }
@@ -166,7 +189,7 @@ export function enforceFreshness(
   const scored = event.choices
     .map((c) => ({
       c,
-      score: findMostSimilarTitle(c.text, usedChoiceTexts)?.score ?? 0,
+      score: findMostSimilarChoice(c.text, usedChoiceTexts)?.score ?? 0,
       // 全等 = 清理标点后与池中某条逐字相同(字符包含关系也会拿 1.0 分,
       // 但那不算全等)。
       exact: usedChoiceTexts.some((t) => cleanText(t) === cleanText(c.text)),

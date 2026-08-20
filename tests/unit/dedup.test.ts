@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  similarity, findMostSimilarTitle, checkEventFreshness, enforceFreshness, isGenericTitle, ShuffleBag,
+  similarity, titleSimilarity, findMostSimilarTitle, findMostSimilarChoice, checkEventFreshness,
+  enforceFreshness, isGenericTitle, ShuffleBag,
 } from '../../src/engine/dedup.ts';
 import type { Choice } from '../../src/engine/types.ts';
 
@@ -14,20 +15,33 @@ function mkChoices(texts: string[]): Choice[] {
 
 describe('文案去重(用户反馈:一局内重复出现相同文案和选项卡)', () => {
   it('相同标题相似度为 1,完全不同标题相似度低', () => {
-    expect(similarity('土地审批风波', '土地审批风波')).toBe(1);
-    expect(similarity('招商引资洽谈', '防汛抢险救灾')).toBeLessThan(0.2);
+    expect(titleSimilarity('土地审批风波', '土地审批风波')).toBe(1);
+    expect(titleSimilarity('招商引资洽谈', '防汛抢险救灾')).toBeLessThan(0.2);
   });
 
-  it('换几个字的"换汤不换药"标题被识别为高相似', () => {
-    const s = similarity('拆迁户集体上访', '拆迁户联名上访');
-    expect(s).toBeGreaterThan(0.5);
+  it('标题口径(bigram):换尾缀的重复被抓,同弧不同事件放行', () => {
+    // 换尾缀仍算重复(用户投诉的「暗流涌动/暗流涌动再现」)。
+    expect(titleSimilarity('暗流涌动', '暗流涌动再现')).toBeGreaterThanOrEqual(0.55);
+    expect(titleSimilarity('深夜的抉择', '午夜的抉择')).toBeGreaterThanOrEqual(0.55);
+    // 同一故事线的不同事件(围绕同一项目)不算重复——字符包含口径曾把
+    // 这类判成 1.0,导致 18/24 事件被误判打入兜底改写。
+    expect(titleSimilarity('老城区改造项目会议', '2020年，老城区改造项目终于迎来了转机')).toBeLessThan(0.4);
+  });
+
+  it('选项口径(含字符包含):短选项是长选项子串也算照抄', () => {
+    expect(similarity('提出解决方案', '在会议中，保持沉默，等待他人提出解决方案。')).toBeGreaterThanOrEqual(0.8);
   });
 
   it('findMostSimilarTitle 命中最相近的历史标题', () => {
     const used = ['防汛救灾值班', '招商引资洽谈', '纪检谈话风波'];
     const best = findMostSimilarTitle('防汛救灾值守', used);
     expect(best?.title).toBe('防汛救灾值班');
-    expect(best?.score).toBeGreaterThan(0.5);
+    expect(best?.score).toBeGreaterThan(0.55);
+  });
+
+  it('findMostSimilarChoice 命中照抄的历史选项', () => {
+    const hit = findMostSimilarChoice('将信息上报给领导，请求指示。', ['耐心倾听意见', '将信息上报给领导，请求指示。']);
+    expect(hit?.score).toBeGreaterThanOrEqual(0.99);
   });
 
   it('checkEventFreshness:标题与历史重复 → 不新鲜并给出原因', () => {

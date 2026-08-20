@@ -19,7 +19,7 @@ import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createGame, generateBackground, nextEvent, applyChoice, finishGame } from '../src/engine/gameEngine.ts';
 import { fixRankFacts } from '../src/engine/rankRules.ts';
-import { isGenericTitle, similarity, TITLE_DUP_THRESHOLD, CHOICE_DUP_THRESHOLD } from '../src/engine/dedup.ts';
+import { isGenericTitle, similarity, titleSimilarity, TITLE_DUP_THRESHOLD, CHOICE_DUP_THRESHOLD } from '../src/engine/dedup.ts';
 import { DEPARTMENTS } from '../src/engine/departments.ts';
 import type { LLMClient, LLMOptions } from '../src/engine/types.ts';
 import type { RNG } from '../src/engine/rng.ts';
@@ -281,9 +281,9 @@ let withinChoiceDup = 0;
 for (const g of stats) {
   const seenChoices: string[] = [];
   g.titles.forEach((title, i) => {
-    // 此前标题比对(含本局全部更早事件)。
+    // 此前标题比对(含本局全部更早事件,标题口径 bigram)。
     for (let j = 0; j < i; j++) {
-      if (similarity(g.titles[j], title) >= TITLE_DUP_THRESHOLD) { withinTitleDup++; break; }
+      if (titleSimilarity(g.titles[j], title) >= TITLE_DUP_THRESHOLD) { withinTitleDup++; break; }
     }
     const ev = g.events[i];
     if (ev?.parseOK) {

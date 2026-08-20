@@ -294,6 +294,23 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
 
   it('格式违规自动重试:前两次输出损坏(零选项/缺标题)→ 第三次成功', async () => {
     const good = new StepMockLLM();
+    // 与去重无关的干净输出(模板 0 的「急件深夜加班」是泛化标题,会叠
+    // 加一次去重重试,干扰本用例对格式重试次数的断言)。
+    const cleanContent = [
+      '【事件类型】daily',
+      '【类型标签】日常政务',
+      '【事件标题】审计组进驻开发区的前夜',
+      '【剧情衔接】开局引入。',
+      '【事件描述】审计通知突然下达，你手头的台账还有三处没对上。',
+      '【出场人物】王建国(县住建局副局长)',
+      '【官场格言】慎独慎微。',
+      '【选项A】连夜核对台账',
+      '【选项A提示】稳妥',
+      '【选项A效果】政治嗅觉:+4 执行力:+5 人脉资源:0 廉洁度:+3 晋升:0',
+      '【选项B】先睡觉明天再说',
+      '【选项B提示】冒险',
+      '【选项B效果】政治嗅觉:-3 执行力:-2 人脉资源:0 廉洁度:-1 晋升:0',
+    ].join('\n');
     let eventCalls = 0;
     const flaky: LLMClient = {
       generate: async (prompt, opts) => {
@@ -301,7 +318,7 @@ describe('游戏引擎端到端(mock LLM,确定性)', () => {
         eventCalls++;
         if (eventCalls === 1) return '抱歉，我不能生成这个内容。'; // 拒答:无任何【】标记
         if (eventCalls === 2) return '【事件类型】daily\n【类型标签】日常政务\n【事件描述】缺标题缺选项的残缺输出'; // 缺【事件标题】
-        return good.generate(prompt, opts);
+        return cleanContent;
       },
     };
     let s = createGame('weiban', 'normal', new SeededRandom(2));
