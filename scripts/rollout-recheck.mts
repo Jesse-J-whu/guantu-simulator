@@ -122,6 +122,17 @@ for (const f of files) {
   }
 }
 
+// ---- 轨迹文件按 playerIdx 排序回写 ----
+// driver 并发完成导致 JSONL 行序≈完成序;排序后行号==playerIdx,
+// 下游(审计 subagent/人工抽查)可直接按行索引,不再有错位陷阱。
+for (const f of files) {
+  const fp = resolve(TRAJ_DIR, f);
+  const lines = readFileSync(fp, 'utf8').split('\n').filter((l) => l.trim());
+  lines.sort((a, b) => (JSON.parse(a).playerIdx - JSON.parse(b).playerIdx));
+  writeFileSync(fp, lines.map((l) => l + '\n').join(''));
+}
+console.log(`轨迹文件已按 playerIdx 排序回写(${files.length} 个)`);
+
 // ---- 重新生成汇总(与 mass-rollout.mts 同口径) ----
 const players = db.prepare('SELECT * FROM players').all() as Array<Record<string, unknown>>;
 const total = players.length || 1;

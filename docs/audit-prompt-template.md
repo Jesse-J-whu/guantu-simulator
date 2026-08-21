@@ -26,11 +26,13 @@
 3. **引擎事实来源**(查职级阶梯/结局阈值时读):
    `src/engine/departments.ts`、`src/engine/ending.ts`、`src/engine/promotion.ts`
 
-**口径说明(先读懂,避免误报)**:本批 rollout 用 mock LLM(内容罐装,
-真实 GLM 多样性已在 Phase 1 用 29 局真 API 扫描单独验证,见 docs/diversity-report.md)。
-所以**跨玩家**出现相同标题/文案是预期行为,不算违规;
-用户要求的是**一局之内**不重复。属性夹取在 0..100:
-已顶在 100 的属性再加、已到 0 再减,数值不变属正常。
+**口径说明(先读懂,避免误报)**:本批 rollout 用 mock LLM(30 个罐装场景单元,
+一局内场景互不相同;真实 GLM 多样性已在 Phase 1 用 29 局真 API 扫描单独验证,
+见 docs/diversity-report.md)。所以**跨玩家**出现相同标题/文案是预期行为,不算违规;
+用户要求的是**一局之内**不重复(标题/选项/正文 desc 三层都不得雷同)。
+属性夹取在 0..100:已顶在 100 的属性再加、已到 0 再减,数值不变属正常。
+**JSONL 行序是并发完成序,与 playerIdx 无关** —— 取样/比对必须按行内
+`playerIdx` 字段过滤,绝不能按行号索引(按行号会取错玩家、误报策略错配)。
 
 ## 审计任务
 
@@ -40,13 +42,14 @@
 
 ```sql
 SELECT COUNT(*) players, SUM(completed) completed, SUM(meets_requirements) meets,
-       SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(generic_titles),
-       SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual),
-       SUM(illegal_rank_change), SUM(llm_errors)
+       SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup),
+       SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied),
+       SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors)
 FROM players WHERE combo_id={{COMBO_ID}};
 ```
 
-要求:players=500,completed=500,meets=500,其余 SUM 全部为 0。
+要求:players=500,completed=500,meets=500,其余 SUM 全部为 0
+(desc_dup 是事件正文重复 —— 玩家直接阅读的大段文案,同样不许一局内雷同)。
 任何非 0 → 逐一列出违规玩家行(`... AND <该列> > 0`)并深入其轨迹 JSONL 定位是哪一步、
 什么文案、是否真违例(也可能是审计器误报 —— 如实区分,给出证据)。
 
@@ -69,18 +72,22 @@ cd /mnt/data2/sw/chenqa/guantu-simulator && npx tsx -e "
 import { readFileSync } from 'node:fs';
 import { titleSimilarity, similarity, isGenericTitle } from './src/engine/dedup.ts';
 const K=['politics','execute','network','integrity'];
+const SAMPLE=[0,1,2,3,4,5,6,7,120,121,122,123,124,125,126,127,360,361,362,363,364,365,366,367,490,491,492,493,494,495];
+// 行序=并发完成序,必须按 playerIdx 字段取人,不能按行号!
+const byIdx = new Map(readFileSync('data/rollout-traj/{{DEPT_ID}}-{{DIFFICULTY}}.jsonl','utf8').split('\n').filter(Boolean).map(l=>{const p=JSON.parse(l);return [p.playerIdx,p];}));
 let bad=0, checked=0;
-for (const idx of [0,1,2,3,4,5,6,7,120,121,122,123,124,125,126,127,360,361,362,363,364,365,366,367,490,491,492,493,494,495]) {
-  const line = readFileSync('data/rollout-traj/{{DEPT_ID}}-{{DIFFICULTY}}.jsonl','utf8').split('\n')[idx];
-  const p = JSON.parse(line); checked++;
-  const titles=[]; const choices=[]; let prev={politics:50,execute:50,network:50,integrity:80}; let rank=0;
+for (const idx of SAMPLE) {
+  const p = byIdx.get(idx); if (!p) { console.log('MISSING', idx); bad++; continue; }
+  checked++;
+  const titles=[]; const descs=[]; const choices=[]; let prev={politics:50,execute:50,network:50,integrity:80}; let rank=0;
   for (const s of p.steps) {
     if (titles.some(t=>titleSimilarity(t,s.title)>=0.55)) { console.log('TITLE-DUP', idx, s.step, s.title); bad++; }
     if (isGenericTitle(s.title)) { console.log('GENERIC', idx, s.step, s.title); bad++; }
+    if (descs.some(t=>similarity(t,s.desc)>=0.8)) { console.log('DESC-DUP', idx, s.step, s.desc.slice(0,30)); bad++; }
     for (const c of s.choices) { if (choices.some(t=>similarity(t,c.text)>=0.8)) { console.log('CHOICE-DUP', idx, s.step, c.text); bad++; } choices.push(c.text); }
     for (const k of K) { const e=Math.max(0,Math.min(100,prev[k]+(s.effectsApplied[k]??0))); if (e!==s.attrsAfter[k]) { console.log('ATTR', idx, s.step, k); bad++; } }
     if (s.promoted ? s.rankAfter-rank!==1 : s.rankAfter!==rank) { console.log('RANK', idx, s.step); bad++; }
-    titles.push(s.title); rank=s.rankAfter; prev=s.attrsAfter;
+    titles.push(s.title); descs.push(s.desc); rank=s.rankAfter; prev=s.attrsAfter;
   }
 }
 console.log('checked', checked, 'violations', bad);
@@ -96,8 +103,9 @@ console.log('checked', checked, 'violations', bad);
 
 1. **故事衔接**:每步 continuity 非空,且 desc 与上一步剧情有承接关系
    (第 1 步允许开局引入)。摘录你判断"衔接最弱"的一步作为证据。
-2. **文案不重复**:24 个标题互不雷同(肉眼复核机械结论),选项文案
-   不跨步重复出现。
+2. **文案不重复**:24 个标题互不雷同、24 段正文(desc)互不雷同、
+   选项文案不跨步重复(肉眼复核机械结论);标题与正文主题应当一致
+   (同属一个场景单元),衔接语提及的上一步标题应真实存在。
 3. **属性变化**:每张选项卡 effect 至少 1 项非零;所选效果真实反映到
    attrsAfter(结合 A 的全量属性数学结论)。
 4. **职级事实**:rankAfter 只在 promoted=true 时 +1;finalRank 与
