@@ -1,0 +1,78 @@
+{
+  "combo": "keji/normal",
+  "comboId": 31,
+  "deptName": "科技部门",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "distinctPlayerIdx": 500,
+      "stepsDoneAll24": true,
+      "bgOkAll": true,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "trackFailures": 0,
+      "stepsTable": { "rows": 12000, "continuityOk": 12000, "attrNonzero": 12000, "choiceCountMin": 4, "choiceCountMax": 4, "rankFixes": 0 },
+      "promotionStepsOnlyOnReviewSteps": "3/6/9/12/15/18/21/24 (REVIEW_INTERVAL=3)",
+      "dbVsJsonlCrossCheck": { "dbRows": 500, "jsonlRows": 500, "fieldMismatches": 0 },
+      "distribution": {
+        "good": { "n": 125, "endings": { "GREAT": 125 }, "avgPromotions": 4.0, "min": 4, "max": 4 },
+        "bad": { "n": 125, "endings": { "BAD": 125 }, "avgPromotions": 1.12, "min": 1, "max": 2 },
+        "random": { "n": 125, "endings": { "GREAT": 79, "GOOD": 31, "MID": 15 }, "avgPromotions": 3.104, "min": 2, "max": 3 },
+        "mixed": { "n": 125, "endings": { "GREAT": 125 }, "avgPromotions": 3.88, "min": 3, "max": 4 },
+        "kejiCrossDifficultyAvgPromotions": { "easy": 3.498, "normal": 3.026, "hard": 2.248 },
+        "verdict": "good→GREAT / bad→BAD 符合预期;random 分散于 GREAT/GOOD/MID;难度梯度 easy>normal>hard 与 promotion.ts 系数(1.2/1.0/0.8)一致"
+      }
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算(非行号),复用 src/engine/dedup.ts 的 titleSimilarity/similarity/isGenericTitle",
+      "sample": "0-7,120-127,360-367,490-495 (每策略≥7人)",
+      "checked": 30,
+      "violations": 0,
+      "details": { "titleDup": 0, "genericTitles": 0, "descDup": 0, "choiceDup": 0, "attrMath": 0, "rankJumps": 0 },
+      "extendedFullRecheck": {
+        "description": "附加:全量 500 人从 JSONL 独立重算(策略映射/24步长/标题/正文/选项重复/属性clamp数学/职级跳变/每卡效果非零/结局阈值手算/finalRank对照阶梯)",
+        "checked": 500,
+        "violations": 0
+      }
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step13 防汛值守第一夜:continuity 仅模板化承接「检查组明天到」,desc 与上步剧情无实际关联", "备注": "晋升步 3/6/12/18,均在考核步" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step21 王建国从领导(s1/s7/s13)变投标商,同一局内角色矛盾", "备注": "廉洁 s20 起夹在 0,负值不再变化属正常 clamp" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁71/均分86.75/rank3)", "最弱一步": "step12→13 检查组到防汛,场景切换无剧情承接", "备注": "晋升步 6/9/15" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁90/均分95.75/rank4)", "最弱一步": "step2 调研名额与 s1 急件无剧情关联,仅靠模板衔接语", "备注": "晋升步 3/9/15/24" },
+    { "playerIdx": 100, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step15 村支书陈明理与其 s5 信访代表/s10 老同学身份冲突", "备注": "s13 politics 100 顶格后加分不变,clamp 正常" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step11 bad 策略选了 C1(廉洁+3):与 C2 得分并列 7.5,argmax 取先者,策略实现细节非违规", "备注": "晋升步 6" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分97.25/rank4)", "最弱一步": "step19 财政的张卫东与其 s3 老板/s23 介绍人身份冲突", "备注": "晋升步 6/9/18/24" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank4)", "最弱一步": "step14 赵亚男职级调整与其 s6 老科长设定勉强自洽", "备注": "晋升步 3/9/15/21" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "MID", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "MID 判定正确(廉洁32<50 非GOOD、风险68<75 非BAD、廉洁32<35 但 rankRatio 3/4≥0.5 落 MID)", "最弱一步": "step24 收尾约谈与 s23 果篮事件的剧情链仅靠衔接语维持", "备注": "晋升步 3/12/21;唯一的 MID 深读样本,阈值边界验证通过" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分100/rank4)", "最弱一步": "step13 收下购物卡再说(s13)与家风设定无关,场景自带冲突", "备注": "晋升步 3/6/12/21" },
+    { "playerIdx": 252, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step5→6 信访事件到老科长托付无承接,模板语兜底", "备注": "晋升步 3/6/12/18" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step7 bad 策略选 C1(廉洁+3):C1 corrupt=7.5 > C2=6.5,合法 argmax", "备注": "s20-s24 廉洁夹 0,clamp 正常" },
+    { "playerIdx": 448, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank4)", "最弱一步": "step21 投标商王建国身份与同局领导角色冲突(罐装单元通病)", "备注": "晋升步 3/6/12/18" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step19 张卫东在 s3/s19/s23 三种身份切换", "备注": "晋升步 6" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁83/均分81.25/rank3)", "最弱一步": "step2 选「睁一只眼闭一只眼」大幅失分后剧情无反馈", "备注": "晋升步 6/12/21;低属性起步仍达标 GREAT,数值合理" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step4 混合策略选 C3 照抄材料,desc 未给出上一步材料语境", "备注": "晋升步 3/9/15/21" }
+  ],
+  "qualitativeFindings": [
+    "衔接语模板化:除第1步外,23 步全部为同一句式「承接「上一步标题」的余波,事情还没完。」,所引标题均真实存在,但下一步 desc 多为新场景,剧情级承接弱(罐装 30 单元的固有接缝)。满足 continuity 非空的硬性要求,建议真实 LLM 上线时加强。",
+    "同一局内 NPC 角色漂移:王建国(领导↔投标商)、张卫东(施工老板↔财政干部↔介绍人)、陈明理(信访代表↔老同学↔村支书)、刘志强(副局长↔纪检组长)、赵亚男(老科长↔退休职工)在同一名玩家的一局里身份互相矛盾,细心玩家可察觉。",
+    "选项原型固定:每步 4 选项恒定映射 稳妥/程序/关系/省事 四原型(hint 标签亦复用),效果极性固定,策略最优解恒为 C1——跨玩家可复用套路,属设计观察非违规。",
+    "mixed 125 人全部 GREAT:罐装效果幅度 + 廉洁初始 80 下,bias 0.25~0.75 的混合策略不足以触达任何差结局;分布偏乐观但无违规。"
+  ],
+  "verdict": "PASS",
+  "summary": "500 名玩家全部完成、六大诉求机械核验全 0 违例(SQL)+30 人独立重算 0 违例(另扩展全量 500 人重算仍 0);16 人逐字深读(24 步×16=384 步)衔接/属性/职级/结局验算全部通过,晋升节奏 1-4 次、结局按策略正确分层;仅有衔接语模板化与同局 NPC 角色漂移两条质量观察,不构成违规。"
+}

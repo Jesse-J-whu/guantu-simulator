@@ -1,0 +1,98 @@
+{
+  "combo": "tongzhan/easy",
+  "comboId": 21,
+  "deptName": "统战部",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=21",
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "extraSanity": {
+        "policy_matches_playerIdx_mod4_mismatches": 0,
+        "steps_done": "min=24 max=24 (all 500)",
+        "promotions_range": "2..3 (ladder max rank=3 副处级)",
+        "distinct_ip": 500,
+        "distinct_seed": 500,
+        "bg_ok": 500,
+        "dept_id/difficulty": "tongzhan/easy x500",
+        "jsonl": "500 lines, playerIdx==lineNo verified for all rows; sampling still filtered by in-line playerIdx field"
+      },
+      "distribution": [
+        { "policy": "good", "ending_type": "GREAT", "n": 125, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "bad", "ending_type": "BAD", "n": 125, "avgPromotions": 2, "min": 2, "max": 2 },
+        { "policy": "mixed", "ending_type": "GREAT", "n": 124, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "mixed", "ending_type": "GOOD", "n": 1, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "random", "ending_type": "GREAT", "n": 86, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "random", "ending_type": "GOOD", "n": 22, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "random", "ending_type": "MID", "n": 17, "avgPromotions": 2.941, "min": 2, "max": 3 }
+      ],
+      "distributionAssessment": "good 全部 GREAT(诉求5 合格);bad 125/125 全 BAD——bad 策略持续选关系/省事类把廉洁打到 0,风险=(100-0)*0.8=80≥75 必然落马,且廉洁<35 触发 INTEGRITY_GATE 暂缓提拔使晋升止步 2 次,与 promotion.ts/ending.ts 设计一致,属策略使然而非分布异常;random 有 GREAT/GOOD/MID 三档散布,合理。bad 未出现 MID2 属预期(easy 系数 0.8 下需廉洁≤6 才触发更极端档,BAD 先命中)。"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 重算脚本(/tmp/audit-tongzhan-easy/recheck.ts),从原始 JSONL 按 playerIdx 字段取样,不依赖 DB",
+      "checked": 30,
+      "violations": 0,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "perPolicy": "每策略各 7-8 人(good/bad/random/mixed)",
+      "checksCovered": [
+        "policy == ['good','bad','random','mixed'][playerIdx%4]",
+        "steps==24",
+        "标题重复 titleSimilarity>=0.55",
+        "通用标题 isGenericTitle",
+        "正文重复 similarity>=0.8",
+        "选项跨步重复 similarity>=0.8",
+        "每选项 effect 至少 1 项非零",
+        "choices>=3 且 chosenIdx 在界内",
+        "effectsApplied == 所选选项 effect",
+        "属性数学 clamp(prev+effect,0,100)==attrsAfter",
+        "rank 只在 promoted=true 时 +1",
+        "finalRank == departments.ts tongzhan 阶梯[final rank]",
+        "promotions == sum(promoted)",
+        "结局按 ending.ts 阈值独立重算(easy diffFactor=0.8)"
+      ],
+      "recheckExtension": { "checked": 16, "violations": 0, "sample": [0, 1, 2, 3, 100, 101, 102, 103, 250, 251, 252, 253, 448, 449, 498, 499], "note": "对 16 名深读玩家用同一脚本再跑一遍,0 违例;30+16 两轮共 46 人次独立重算全通过" },
+      "falseAlarmClarified": "首轮脚本曾报 30 条 FINALRANK,系审计员自写比较器把字符串职级名与数字 rank 直接比较所致,非数据违例;修正为 finalRank==ladder[rank] 后全部通过。"
+    }
+  },
+  "violations": [],
+  "observations": [
+    { "kind": "cross-player-uniformity", "detail": "全 500 名玩家的 24 个场景标题序列完全相同(全文件仅 24 个去重标题/24 段去重正文,title→desc 全局字节级一致,场景顺序固定不洗牌)。按模板口径(mock LLM)跨玩家相同属预期、不算违规,且一局之内 24 标题/正文/选项零重复达标;但叙事层面跨玩家零差异值得产品知悉。" },
+    { "kind": "formulaic-continuity", "detail": "衔接语为固定公式「承接「上一标题」的余波,事情还没完。」(全文件仅 24 条衔接字符串)。引用的上一步标题 100% 真实存在(重算验证 0 缺失),但正文与上一步剧情是'年度换景'式松散衔接,最弱例:玩家0 step5 信访群众围堵办公楼 与 step4 两位领导方案之争 无任何剧情牵连。" },
+    { "kind": "choice-scene-mismatch", "detail": "选项文案取自 稳妥/程序/关系/省事 四类原型池,少数与场景语义不合,如 step23 值班室的不速之客(送礼场景) 提供「先试点再推开」、step15 扶贫村的第一周 提供「主动说明情况配合调查」。一局内选项文案无重复(重算 0 违例),属 mock 罐头文案已知局限。" },
+    { "kind": "ending-text-tone", "detail": "BAD 结局评语复用 ending.ts 模板「2次晋升,稳步向前,但级别越高,摔得越重」,「稳步向前」一词在落马结局中语气略违和,系引擎文案非轨迹数据问题。" },
+    { "kind": "attr-clamp", "detail": "后期属性顶格 100 后继续加值数值不变(如玩家0 step15 起),符合 0..100 夹取口径,非违例。" }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s9,阶梯顶=副处级)", "结局验算": "GREAT 判定正确(廉100/均分100/rank3)", "最弱一步": "step5 信访群众围堵办公楼——与上一步领导方案之争无剧情牵连,衔接仅靠公式句", "备注": "good 全选稳妥/程序类,全属性封顶" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9;廉<35 后被 INTEGRITY_GATE 暂缓提拔)", "结局验算": "BAD 判定正确(廉0,风险(100-0)*0.8=80≥75)", "最弱一步": "step13 防汛值守与上步检查组无剧情衔接", "备注": "24 步全选[2]关系类,廉洁 80→0 单调滑坡,人脉反而涨到 100,叙事自洽" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s9/s12)", "结局验算": "GREAT 判定正确(廉100/均分98.5/rank3)", "最弱一步": "step4 两位领导方案之争——直承购物卡场景,衔接弱", "备注": "开局乱选(s1 选偷懒、s4 选照抄)后转好,轨迹有起伏" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s12)", "结局验算": "GREAT 判定正确(廉88/均分92.8/rank3)", "最弱一步": "step5 信访围堵承接方案之争仅靠公式句", "备注": "好/坏选项交替可见(s4、s18、s23、s24 选省事/关系类)" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s9)", "结局验算": "GREAT 判定正确(廉100/均分100/rank3)", "最弱一步": "step15 扶贫村第一周——场景切换最突兀", "备注": "属性全 100 封顶" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9)", "结局验算": "BAD 判定正确(廉0/风险80)", "最弱一步": "step15 扶贫村场景与前步脱节", "备注": "s7 曾选程序类(廉+3),bad 策略保真度略松但整体成立" },
+    { "playerIdx": 102, "policy": "random", "promotions": 3, "endingType": "GOOD", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s12/s18)", "结局验算": "GOOD 判定正确(廉54<70 不够 GREAT;廉≥50 且均分57≥45)", "最弱一步": "step11 饭局座次与前步无剧情联系", "备注": "random 典型:前半摆烂后半补救" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s12)", "结局验算": "GREAT 判定正确(廉100/均分99.3/rank3)", "最弱一步": "step9 避重就轻写总结——选择与场景关联弱", "备注": "s1 选关系类后转好,mixed 交替特征明显" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "MID", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9/s15)", "结局验算": "MID 判定正确(廉39<50 不够 GOOD;廉≥35 或 rankRatio≥0.5 命中 MID)", "最弱一步": "step15 帮忙遮掩数据缺口——与扶贫场景勉强贴合", "备注": "random 三档散布的 MID 样本" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s12)", "结局验算": "GREAT 判定正确(廉100/均分100/rank3)", "最弱一步": "step4 照抄上次材料交差——场景是方案之争,选项勉强贴题", "备注": "早期 3 次坏选择后全程转好" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s9)", "结局验算": "GREAT 判定正确(廉100/均分99.3/rank3)", "最弱一步": "step23 送礼场景提供「先试点再推开」选项,语义不合", "备注": "标准 good 轨迹" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9)", "结局验算": "BAD 判定正确(廉0/风险80)", "最弱一步": "step13 防汛场景承接检查组仅公式句", "备注": "与玩家1/101/449 轨迹形态一致(策略同源)" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s9)", "结局验算": "GREAT 判定正确(廉100/均分100/rank3)", "最弱一步": "step16 挂牌督办限期整改——接待场景下语义偏差", "备注": "全属性封顶" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9)", "结局验算": "BAD 判定正确(廉0/风险80)", "最弱一步": "step17 廉已 0 后每步仍 -3~-6 生效(夹取不变,正常)", "备注": "bad 标准形态" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GOOD", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s6/s9/s15)", "结局验算": "GOOD 判定正确(廉62<70;廉≥50 且均分80.8≥45)", "最弱一步": "step22 与对手交换条件——家属院求助场景下语义勉强", "备注": "random 中后程转稳" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(升于 s3/s6/s9)", "结局验算": "GREAT 判定正确(廉100/均分99.8/rank3)", "最弱一步": "step19 出了问题再说——跨部门协调会下语义偏差", "备注": "尾部玩家形态与首部一致,无系统性衰减" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 名玩家全部完成且达标,DB 六大合规 SUM 全 0,30 人独立重算(外加 16 名深读玩家复算,共 46 人次)0 违例;16 人逐字深读衔接/文案/属性数学/职级/晋升/结局全部通过,结局阈值亲手验算全对。PASS。附 5 条非违规观察:全 500 人共用同一 24 场景固定序列与公式化衔接语(跨玩家零叙事差异,mock 口径内)、选项文案偶与场景语义不合等。"
+}

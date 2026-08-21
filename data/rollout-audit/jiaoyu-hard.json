@@ -1,0 +1,83 @@
+{
+  "combo": "jiaoyu/hard",
+  "comboId": 29,
+  "deptName": "教育部门",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "distribution": [
+        { "policy": "good", "ending_type": "GREAT", "n": 125, "avgPromotions": 3.0, "min": 3, "max": 3 },
+        { "policy": "bad", "ending_type": "BAD", "n": 125, "avgPromotions": 0.98, "min": 0, "max": 1 },
+        { "policy": "mixed", "ending_type": "GREAT", "n": 123, "avgPromotions": 2.8, "min": 2, "max": 3 },
+        { "policy": "mixed", "ending_type": "GOOD", "n": 2, "avgPromotions": 2.0, "min": 2, "max": 2 },
+        { "policy": "random", "ending_type": "GREAT", "n": 87, "avgPromotions": 2.03, "min": 2, "max": 3 },
+        { "policy": "random", "ending_type": "GOOD", "n": 25, "avgPromotions": 2.0, "min": 2, "max": 2 },
+        { "policy": "random", "ending_type": "MID", "n": 8, "avgPromotions": 2.0, "min": 2, "max": 2 },
+        { "policy": "random", "ending_type": "BAD", "n": 5, "avgPromotions": 2.0, "min": 2, "max": 2 }
+      ],
+      "promotionsByDifficulty_jiaoyu": { "easy(27)": 2.75, "normal(28)": 2.53, "hard(29)": 2.2 }
+    },
+    "independentRecheck": {
+      "sample": "30人(idx 0-7,120-127,360-367,490-495),按行内 playerIdx 字段取样",
+      "checked": 30,
+      "violations": 0,
+      "checks": ["标题重复 bigram>=0.55", "选项相似度>=0.8", "desc 相似度>=0.8", "clamp(prev+effect)属性数学", "职级跳变"]
+    },
+    "fullJsonlStructuralScan": {
+      "checked": 500,
+      "issues": 0,
+      "checks": [
+        "comboId=29 全部一致",
+        "policy == ['good','bad','random','mixed'][idx%4] 全对",
+        "playerIdx 唯一且覆盖 0..499",
+        "steps=24, continuity/desc/title 非空",
+        "每张选项卡 effect 至少 1 项非零",
+        "effectsApplied 与所选选项 effect 逐字段相等",
+        "finalRank 与 departments.ts 阶梯['科员','副科级','正科级','副处级']一致",
+        "promotions 计数与 promoted 步数一致",
+        "按 ending.ts 阈值(hard: risk=(100-廉洁)*1.3>=75→BAD; 廉洁>=70且均分>=60且rank>=2→GREAT; ...)独立重算结局,500/500 与记录一致"
+      ]
+    },
+    "dbJsonlCrossCheck": { "jsonl": 500, "db": 500, "mismatches": 0 }
+  },
+  "violations": [],
+  "qualityNotes": [
+    "衔接语为模板句『承接「上一标题」的余波,事情还没完。』,引用的上一步标题均真实存在、24/24 非空,满足要求;但信息量低,最弱衔接如 step12『检查组明天到』→step13『防汛值守第一夜』属纯场景切换。",
+    "选项文案取自固定原型池(稳妥但费工/程序优先/经营关系/省事但有代价),偶与场景耦合较松(如『家属院的求助』场景提供『书面建议暂缓通过』);一局之内无重复,不构成违规。",
+    "分布偏置:random 策略 87/125(70%)GREAT、mixed 123/125 GREAT、MID2 本组合 0 人 —— mock 选项池净收益偏正,结局区分度偏低(调参观察,非违规)。"
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(含100顶格夹取)", "职级": "通过(6/12/21步+1)", "结局验算": "GREAT 正确(廉洁100/均分100/rank3/risk0)", "最弱一步": "step13 检查组明天到→防汛值守第一夜,剧情无内容级承接,仅靠模板衔接语", "备注": "bgOk=true" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁 clamp 至 0 后保持)", "职级": "通过", "结局验算": "BAD 正确(risk=(100-0)*1.3=130>=75)", "最弱一步": "step9 晋升后廉洁跌破35,后续全部暂缓提拔,与 promotion.ts INTEGRITY_GATE=35 一致", "备注": "bad 策略稳定走 BAD" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁72/均分81.8/rank2/risk36.4)", "最弱一步": "step21 招标质疑选项『请老同志出主意』与场景耦合松", "备注": "" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁100/均分100/rank3)", "最弱一步": "step24 末步晋升,节奏合理", "备注": "" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确", "最弱一步": "step13 同上场景切换类", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 正确(risk130)", "最弱一步": "step22 家属院求助配选项『书面建议暂缓通过』语义错位", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(人脉最低24仍为正演算)", "职级": "通过", "结局验算": "GREAT 正确(廉洁91/均分79.5/rank2)", "最弱一步": "step9 空缺副科长场景配『先停职检查再定性』略跳", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁100/均分99/rank3)", "最弱一步": "step8 选『悄悄改回原口径』后 desc 无回响(mock 不生成后果文)", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁99/均分98.8/rank2)", "最弱一步": "step18 民主生活会→step19 跨部门协调会纯并列", "备注": "" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁100/均分98.5/rank3)", "最弱一步": "step12 晋升触发点在『检查组明天到』危机步,契合", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确", "最弱一步": "step13 同场景切换类", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 正确(risk130)", "最弱一步": "step11 选2『保持低调』与 bad 策略偶发好选择,轨迹仍自洽", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确", "最弱一步": "step13 同场景切换类", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 正确(risk130)", "最弱一步": "step7 bad 策略选3『请老领导帮忙递话』效应P6/E-3/N4/I-3,坏选择却涨政治,原型池语义略拧", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 正确(廉洁38→risk=(100-38)*1.3=80.6>=75,边界案例验算吻合)", "最弱一步": "step24 纪检约谈步恰逢晋升+1,『被约谈还升官』叙事略怪但机制合法", "备注": "唯一晋升2次仍落马的深读样本" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 正确(廉洁93/均分89.8/rank2)", "最弱一步": "step12 选4『会前先给对方透题』后无剧情回响", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500名玩家全部完成且合规,DB 六大违规列全 0;30人独立重算 0 违规、另做全量500人结构扫描+结局独立重算 0 问题;16人逐字深读全部通过。PASS。三条非阻塞质量观察:模板化衔接语信息量低、选项原型池偶与场景错位、mock选项池净收益偏正致 random 玩家70% GREAT 且 MID2 零触发。"
+}

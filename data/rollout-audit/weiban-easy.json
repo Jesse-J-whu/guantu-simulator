@@ -1,0 +1,93 @@
+{
+  "combo": "weiban/easy",
+  "comboId": 0,
+  "deptName": "委办(党委办公室)",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=0",
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "bg_ok": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "violation_rows": [],
+      "stepsTable": { "rows": 12000, "promotionsTotal": 2059, "nonReviewPromotions": 0 },
+      "distribution": {
+        "bad/BAD": 125, "good/GREAT": 125, "mixed/GREAT": 121, "mixed/GOOD": 4,
+        "random/GREAT": 82, "random/GOOD": 36, "random/MID": 6, "random/MID2": 1
+      },
+      "promoByPolicy": {
+        "good": { "avg": 5.0, "min": 5, "max": 5 },
+        "bad": { "avg": 2.152, "min": 2, "max": 3 },
+        "mixed": { "avg": 4.944, "min": 4, "max": 5 },
+        "random": { "avg": 4.376, "min": 2, "max": 5 }
+      }
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按行内 playerIdx 字段过滤取样重算(不信任 DB):标题 bigram Jaccard≥0.55 / 选项相似度≥0.8(跨步+步内) / isGenericTitle / 属性 clamp(prev+effect)==attrsAfter / effectsApplied==choices[chosenIdx].effect / 每选项≥1 非零效果 / promoted=>rank+1 否则不变 / finalRank 对照 departments.ts 委办阶梯 / 结局按 ending.ts easy 系数 0.8 验算 / policy==['good','bad','random','mixed'][idx%4]",
+      "checked": 30,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "violations": 0,
+      "fullRecheckAll500": { "checked": 500, "violations": 0, "endingRecompute": { "GREAT": 328, "BAD": 125, "GOOD": 40, "MID": 6, "MID2": 1 }, "endingMismatches": 0, "finalRankMismatches": 0, "policyMismatches": 0, "attrMathMismatches": 0 }
+    }
+  },
+  "violations": [],
+  "observations": [
+    {
+      "kind": "narrative-identical-across-players",
+      "severity": "info(口径已豁免)",
+      "detail": "500 名玩家共用同一 24 个罐装场景单元(急件连夜核改报送→…→纪检组长突然约谈)、同一顺序、同一开场白;玩家间差异仅来自效果数值随 seed(77000000+playerIdx) 的 ±1~3 抖动与策略选择。mock LLM 口径已声明跨玩家相同属预期,不计违规。"
+    },
+    {
+      "kind": "continuity-template",
+      "severity": "minor-quality",
+      "detail": "全部 11,500 个非首步衔接语均为固定模板「承接「上一步标题」的余波,事情还没完。」(首步固定「这是你入职后的第一件事。」)。衔接非空且所引上一步标题真实存在,机械口径通过;但 desc 为自包含场景,与上一步无实质剧情承接。"
+    },
+    {
+      "kind": "scene-jump",
+      "severity": "minor-quality",
+      "detail": "S13 防汛值守第一夜→S14 会议室的座次牌→S15 扶贫村的第一周连续跳场,仅靠模板语+固定 NPC 班底(王建国/李淑芬/赵亚男/刘志强/张卫东/陈明理)维持人物连贯,是 24 步中最弱的叙事链。"
+    },
+    {
+      "kind": "choice-archetype-slots",
+      "severity": "minor-quality",
+      "detail": "每步 4 个选项固定走「稳妥但费工/程序优先/经营关系/省事但有代价」四个原型槽(提示语 12,000 步全同),选项文案为通用动作池,与当步 desc 只是松散匹配(如 S14「会议室的座次牌」配「引入审计专项核查」、S6「老科长退休托付」配「如实上报数据口径」);步内选项文案不重复,不构成 choice_dup。"
+    },
+    {
+      "kind": "integrity-gate-freeze",
+      "severity": "info(与引擎设计一致)",
+      "detail": "bad 策略 125 人晋升全部冻结在 2~3 次:廉洁度自 S19 前后跌破 INTEGRITY_GATE=35 后,promotion.ts 按设计暂缓提拔(积分保留),无一例外越线;good 125 人全部恰好 5 次晋升到顶(副厅级)。策略→结局完全确定:good→GREAT、bad→BAD 各 125/125,无个体逃逸。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24(模板语,所引标题均真实存在)", "属性数学": "通过", "职级": "通过(S3/6/9/12/18 晋升至顶 rank5)", "结局验算": "GREAT 正确(廉洁100≥70/均分100≥60/rank5≥2)", "最弱一步": "S13→S14 防汛值守跳座次牌,仅模板语衔接", "备注": "终态 100/100/100/100,evalText 与终态一致" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁 S21 起夹取在 0,后续扣减无变化)", "职级": "通过(S3/S9 后廉洁<35 被 INTEGRITY_GATE 卡在 rank2)", "结局验算": "BAD 正确((100-0)×0.8=80≥75)", "最弱一步": "S13→S14 同上", "备注": "终态 100/52/100/0" },
+    { "playerIdx": 2, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/18)", "结局验算": "GREAT 正确(廉洁95≥70/均分84/rank4≥2)", "最弱一步": "S13→S14 同上", "备注": "终态 78/84/79/95" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/15/21)", "结局验算": "GREAT 正确(廉洁93≥70/均分95.5/rank5)", "最弱一步": "S13→S14 同上", "备注": "终态 96/97/96/93" },
+    { "playerIdx": 100, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12/18)", "结局验算": "GREAT 正确(100/100/100/100)", "最弱一步": "S13→S14 同上", "备注": "与 P0 同轨迹骨架,数值抖动 ±1~2" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁触 0 后夹取不变)", "职级": "通过(S3/S9,后卡 rank2)", "结局验算": "BAD 正确((100-0)×0.8=80≥75)", "最弱一步": "S13→S14 同上", "备注": "终态 100/73/100/0" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/9/15/21)", "结局验算": "GOOD 正确(廉洁64<70 不入 GREAT,≥50 且均分77.5≥45;evalText「平均属性 78 分」=四舍五入一致)", "最弱一步": "S13→S14 同上", "备注": "终态 77/69/100/64" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(5 次至顶)", "结局验算": "GREAT 正确(100×3+100)", "最弱一步": "S13→S14 同上", "备注": "终态 100/100/100/100" },
+    { "playerIdx": 250, "policy": "random", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12/21)", "结局验算": "GREAT 正确(廉洁93/均分92.75/rank5)", "最弱一步": "S13→S14 同上", "备注": "终态 96/97/85/93" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/9/12/15/21)", "结局验算": "GREAT 正确(廉洁92/均分93.5/rank5)", "最弱一步": "S13→S14 同上", "备注": "终态 100/86/96/92" },
+    { "playerIdx": 252, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12/18)", "结局验算": "GREAT 正确(100/100/100/100)", "最弱一步": "S13→S14 同上", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁夹取 0)", "职级": "通过(S3/S9,卡 rank2)", "结局验算": "BAD 正确(80≥75)", "最弱一步": "S13→S14 同上", "备注": "终态 100/63/100/0" },
+    { "playerIdx": 448, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12/18)", "结局验算": "GREAT 正确(100×4)", "最弱一步": "S13→S14 同上", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁夹取 0)", "职级": "通过(S3/S9,卡 rank2)", "结局验算": "BAD 正确(80≥75)", "最弱一步": "S13→S14 同上", "备注": "终态 100/63/100/0" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(廉洁 S7 触 100 夹取,逐步回落到 64)", "职级": "通过(S3/6/9/18)", "结局验算": "GOOD 正确(廉洁64<70 不入 GREAT,≥50 且均分75.25≥45;evalText「平均属性 75 分」一致)", "最弱一步": "S15→S16 扶贫村跳接待细节,desc 无承接", "备注": "终态 65/87/85/64;ip 10.0.2.99 属尾段地址段" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(S5 起廉洁/执行多处 100 夹取,施加正效果后不变)", "职级": "通过(S3/6/9/12/18 至顶 rank5)", "结局验算": "GREAT 正确(廉洁100≥70/均分98.5≥60/rank5≥2)", "最弱一步": "S13→S14 同上", "备注": "终态 100/100/94/100,人脉 94 未满" }
+  ],
+  "verdict": "PASS",
+  "summary": "combo 0(委办/easy)500 人全量机械核验零违规:DB 侧 13 项违规计数全 0、12,000 步无非考核期晋升;按行内 playerIdx 过滤的 30 人 tsx 独立重算 0 违规,扩展到全 500 人的对向重算(policy/steps/效果应用/属性夹取数学/职级转移/结局阈值)亦 0 违规,重算结局分布 {GREAT 328, BAD 125, GOOD 40, MID 6, MID2 1} 与 DB 完全一致。16 人逐字深读(每步 desc/选项/效果/数学/衔接)全部通过。策略→结局完全确定:good 125/125 全 GREAT 恰 5 晋升至顶,bad 125/125 全 BAD 且晋升冻结在 2~3 次(廉洁跌破 INTEGRITY_GATE=35 被暂缓提拔,与 promotion.ts 设计一致)。口径内已知限制:全员共用同一 24 场景固定序列与模板衔接语(mock 口径豁免),选项提示语为四原型槽、与场景松散匹配,属内容多样性问题而非机械违规。"
+}

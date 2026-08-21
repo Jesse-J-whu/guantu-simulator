@@ -1,0 +1,54 @@
+{
+  "combo": "weiban/hard",
+  "comboId": 2,
+  "deptName": "委办(党委办公室)",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500, "completed": 500, "meetsRequirements": 500, "bgOk": 500,
+      "continuityMissing": 0, "titleDup": 0, "choiceDup": 0, "descDup": 0,
+      "genericTitles": 0, "attrZeroOffered": 0, "attrNotApplied": 0,
+      "rankResidual": 0, "illegalRankChange": 0, "llmErrors": 0, "trackFailures": 0,
+      "avgPromotions": 2.336, "minPromotions": 1, "maxPromotions": 3
+    },
+    "distribution": {
+      "bad/BAD": 125, "good/GREAT": 125, "mixed/GREAT": 125,
+      "random/GREAT": 82, "random/GOOD": 31, "random/MID": 3, "random/BAD": 9,
+      "weibanPromotionAvgByDifficulty": { "easy": 4.118, "normal": 3.404, "hard": 2.336 }
+    },
+    "independentRecheck": {
+      "checked": 30, "violations": 0,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样,重算标题bigram(≥0.55)/选项相似度(≥0.8)/desc重复/每选项effect非零/属性clamp数学/职级跳变",
+      "extraFull500Recompute": "python3 对全部500人重算属性clamp、职级跳变、promotions计数、finalRank对照departments.ts阶梯、按ending.ts阈值(hard系数1.3)重算结局:violations=0;原始分布与DB逐格一致"
+    }
+  },
+  "violations": [],
+  "observations": [
+    "衔接语为统一模板句「承接「上一步标题」的余波,事情还没完」(mock LLM 罐装场景单元):非空且引用的标题真实存在,但 desc 多为全新场景、与上一步剧情无实质细节承接(预期口径内,不计违例)",
+    "选项文案取自通用选项池,个别选项与具体场景不贴(如《信访群众围堵办公楼》出现「与竞争者私下沟通」而场景中无竞争者):mock 阶段预期,跨玩家同文案亦为预期",
+    "bad 玩家偶选正向选项(如 p1 step18 选[1])经核为 pickChoice 的 argmax(politics+execute+network-1.5×integrity) 最优解(10分>7分),非策略错配",
+    "random 策略 66%(82/125)达 GREAT:因选项池中正向选项占多数,均匀随机天然偏正向;与 good=100% GREAT、bad=100% BAD 的方向一致,分布合理"
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s3/s9/s18晋升,rank0→3)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3,risk 0)", "最弱一步": "step13《防汛值守第一夜》:continuity 称承接「检查组明天到」余波,desc 却是全新防汛场景,零承接细节", "备注": "开局设定与24场景单元互不重复" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅s9晋升;此后廉洁<35被暂缓提拔,符合promotion.ts INTEGRITY_GATE=35)", "结局验算": "BAD 判定正确(廉洁0→risk 130≥75)", "最弱一步": "step13(同模板衔接问题)", "备注": "step18选正向选项[1]系argmax(corrupt)正确行为,非策略错配" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s15/s24晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分99.75/rank3)", "最弱一步": "step15《扶贫村的第一周》接《会议室的座次牌》,纯模板承接", "备注": "随机策略选择分布均匀,好坏选项均出现" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s12/s21晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step13(模板承接)", "备注": "mixed 偏置下前期有bad选项后期转好,叙事仍自洽" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s9/s18晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step13(模板承接)", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9晋升时廉洁37≥35,之后31<35暂缓)", "结局验算": "BAD 判定正确(廉洁0→risk 130)", "最弱一步": "step16《接待工作的细节》接《扶贫村的第一周》,无承接细节", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9/s15/s24晋升)", "结局验算": "GREAT 判定正确(廉洁88/均分92.25/rank3)", "最弱一步": "step15(晋升步但desc为全新扶贫场景)", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s12/s18晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step16(模板承接;该步选了bad选项[3])", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "endingType": "GOOD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9/s15晋升)", "结局验算": "GOOD 判定正确(risk 57.2<75;廉洁56<70非GREAT、≥50且均分82.5≥45→GOOD;evalText均分83=round(82.5)一致)", "最弱一步": "step18《民主生活会的发言》接《文件流转的失误》,模板承接", "备注": "全批为数不多的GOOD样本,分档边界验算精确" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s15晋升)", "结局验算": "GREAT 判定正确(廉洁80/均分85/rank2)", "最弱一步": "step13(模板承接)", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s9/s18晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank3)", "最弱一步": "step13(模板承接)", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9晋升,此后廉洁<35暂缓)", "结局验算": "BAD 判定正确(廉洁0→risk 130)", "最弱一步": "step11《饭局座次玄机》接《审批窗口的老同学》,模板承接", "备注": "step18选[1]正向选项亦为argmax(corrupt)正确行为" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s9/s18晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step13(模板承接)", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9晋升,廉洁37达标后跌破35)", "结局验算": "BAD 判定正确(廉洁0→risk 130)", "最弱一步": "step15(模板承接)", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s9/s18晋升)", "结局验算": "GREAT 判定正确(廉洁74/均分74.75/rank2,恰好压线过三条件)", "最弱一步": "step19《跨部门协调会》接《民主生活会的发言》,模板承接", "备注": "随机策略早期连选坏选项、后期转好,GREAT 压线达成" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(s6/s15/s24晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step13(模板承接)", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500完成且六大诉求全量0违例:SQL九项SUM全0;30人独立重算0违规并加做全500人原始JSONL重算(属性clamp/职级/结局阈值)仍0违规;16人逐字深读全通过。hard晋升均值2.34显著低于normal 3.40/easy 4.12,符合promotion.ts难度设计;唯一值得说的是衔接语为统一模板句(mock LLM预期),desc与上一步多为新场景弱承接,建议真实LLM接入后复核。"
+}

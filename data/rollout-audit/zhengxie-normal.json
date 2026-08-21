@@ -1,0 +1,78 @@
+{
+  "combo": "zhengxie/normal",
+  "comboId": 34,
+  "deptName": "政协",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=34",
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "trackFailures": 0,
+      "stepsDone": "all 24 (min=max=24), steps表 12000 行/500 玩家",
+      "bgOk": 500,
+      "policyMatchesIdxMod4": "500/500 (good/bad/random/mixed)",
+      "distinctSessionIds": 500,
+      "distribution": {
+        "good": { "GREAT": 125, "promotionsAvg": 2.0, "min": 2, "max": 2 },
+        "bad": { "BAD": 125, "promotionsAvg": 1.12, "min": 1, "max": 2 },
+        "random": { "BAD": 1, "MID": 13, "GOOD": 34, "GREAT": 77, "promotionsAvg": 2.0 },
+        "mixed": { "MID": 1, "GOOD": 2, "GREAT": 122, "promotionsAvg": 2.0 },
+        "finalRankDist": { "副主席": 389, "常委": 111 },
+        "note": "good 全 GREAT、bad 全 BAD 符合策略预期;政协阶梯仅 3 级(委员/常委/副主席),晋升数上限 2,非 0 非满,节奏合理"
+      }
+    },
+    "independentRecheck": {
+      "method": "npx tsx + src/engine/dedup.ts 从原始 JSONL 按 playerIdx 字段取样重算(标题 bigram≥0.55 / 选项与正文相似度≥0.8 / clamp(prev+effectsApplied)==attrsAfter / promoted↔rankAfter)",
+      "checked": 30,
+      "violations": 0,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495]
+    },
+    "extraFullChecks": {
+      "full500DedupRecheck": { "checked": 500, "violations": 0, "continuityEmpty": 0 },
+      "effectsAppliedEqualsChosenEffect": "500人×24步×4属性 全部相等(名义值记录,夹取在 attrsAfter 生效,与口径说明一致)",
+      "endingRecompute": "按 ending.ts(normal: BAD=廉洁≤25; GREAT=廉洁≥70且均分≥60且rank≥2; GOOD=廉洁≥50且均分≥45; MID=廉洁≥35或rankRatio≥0.5) 重算 500/500 与 endingType 一致",
+      "finalRankVsLadder": "500/500 与 departments.ts 阶梯(委员/常委/副主席)一致",
+      "promotionsFieldVsPromotedSteps": "500/500 一致"
+    }
+  },
+  "violations": [],
+  "qualityObservations": [
+    "衔接为统一模板句『承接「上一步标题」的余波,事情还没完。』,非空且引用真实标题,但 desc 每步开启全新事件,剧情承接是名义性的(mock 罐装场景单元的预期产物;跨玩家同文案按口径说明豁免)",
+    "选项文案取自通用原型池(稳妥但费工/程序优先/经营关系/省事但有代价 四原型),部分选项与当前场景语义脱节,如防汛值守场景出现『收下购物卡再说』、老科长退休托付场景出现『如实上报数据口径』、扶贫村场景出现『主动说明情况配合调查』(场景内无对应情节)",
+    "good/mixed 玩家属性中局起饱和 100(如 idx0 自 step15 起),后半局数值无可见成长(0..100 夹取正常,非违例)",
+    "bad 策略 125/125 全 BAD 结局,无 MID2 档(策略恒选风险原型致廉洁必然归零),结局分布对策略高度敏感"
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step3 continuity 称承接「一把手点名调研」,desc 却直接开启『验收现场的购物卡』新事件,无剧情承接", "备注": "属性自 step15 起全饱和 100;step3/6 两次晋升节奏正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "常委", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,(100-0)×1.0=100≥75)", "最弱一步": "step3 购物卡场景选『把责任推给前任』,选项与场景人物(施工方老板)对不上", "备注": "廉洁 step22 触底 0 后继续 -3~-6,夹取后数值不变属正常;仅 step6 一次晋升" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁78/均分76.75/rank2)", "最弱一步": "step6 continuity 称承接信访围堵,desc 转入『老科长退休托付』,两事无关联", "备注": "随机策略轨迹属性波动真实(有涨有跌),step6/9 晋升" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step15 扶贫村场景选项『主动说明情况配合调查』,场景中并无调查情节", "备注": "mixed 策略穿插风险选项(如 step2 睁一只眼闭一只眼)后仍拉回满分" },
+    { "playerIdx": 100, "policy": "good", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step9 副科长空缺场景选项『先停职检查再定性』,场景中无人可停职", "备注": "全程序优先/稳妥原型,轨迹与 idx0 高度同构(罐装单元预期)" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "常委", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,(100-0)≥75)", "最弱一步": "step20 年度考核场景选『请客疏通关系』,desc 未提供请客对象", "备注": "除 step5 外 23 步全选『经营关系』原型,廉洁单调衰减至 0" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁93/均分95.25/rank2)", "最弱一步": "step13 防汛值守场景出现选项『收下购物卡再说』,防汛值班点无行贿人", "备注": "step13 后连续正向选择拉满属性" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step15 同类『主动说明情况配合调查』选项与场景脱节", "备注": "step7/11/12 风险选择造成回撤后回升,轨迹有起伏" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁73/均分87.25/rank2)", "最弱一步": "step13 防汛场景『收下购物卡再说』语义错位", "备注": "廉洁曾跌至 61(step15)后回升,中期风险选择真实生效" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank2)", "最弱一步": "step19 跨部门协调场景选『多方走动拉支持』尚可,但 step3『请同学从中斡旋』与验收场景人物衔接生硬", "备注": "step18 唯一风险选择后立即回正" },
+    { "playerIdx": 252, "policy": "good", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step15 扶贫场景选项与场景脱节(同 idx3)", "备注": "step3/6 晋升,标准 good 轨迹" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "常委", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0)", "最弱一步": "step19 起廉洁 5→0 触底,continuity 仍称『事情还没完』但后 5 步均为全新事件", "备注": "step18 廉洁仅剩 1 分仍未落马(结算在终局,机制如 ending.ts 设计)" },
+    { "playerIdx": 448, "policy": "good", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank2)", "最弱一步": "step15 扶贫场景选项脱节(同上)", "备注": "与 idx0/100/252 同构,跨玩家同文案属口径豁免" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "常委", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0)", "最弱一步": "step3 『把责任推给前任』与验收场景弱相关", "备注": "step18 唯一选『程序优先』廉洁 4→10 回升,随后再归零,数值真实反映选择" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁87/均分89.5/rank2)", "最弱一步": "step21 招标场景选『表面配合实际拖延』尚可,衔接弱项仍是 continuity 模板句本身", "备注": "随机轨迹有 3 次风险选择回撤后修复" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 2, "endingType": "MID", "finalRank": "副主席", "衔接": "24/24(模板化承接)", "属性数学": "通过", "职级": "通过", "结局验算": "MID 判定正确(廉洁49<50 差1分未达GOOD,≥35 且 rankRatio=1.0 落 MID;边界案例)", "最弱一步": "step20 连续风险选择(混过检查就翻篇)致廉洁跌至 53,与上步考核谈话承接弱", "备注": "边界值 49 恰好卡在 GOOD 阈值下,引擎分档正确" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成且六大诉求 0 违例(SQL 全量 + 30 人抽样独立重算 + 额外全量 500 人去重/属性/结局/职级复算全部通过;16 人逐字深读结局验算全对,含 idx499 廉洁49 卡 GOOD 阈值下落的边界案例);深读发现两处产品级观察——衔接语为统一模板句且 desc 每步另起炉灶、部分选项文案取自通用原型池与场景语义脱节(如防汛场景出现『收下购物卡再说』),均非六大诉求违例,建议反馈给文案/LLM 生成侧。"
+}

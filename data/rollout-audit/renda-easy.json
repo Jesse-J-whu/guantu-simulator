@@ -1,0 +1,90 @@
+{
+  "combo": "renda/easy",
+  "comboId": 36,
+  "deptName": "人大",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=36",
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "bg_ok": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "track_failures": 0,
+      "violation_rows": [],
+      "stepsTable": { "rows": 12000, "rankFixesSum": 0, "promotionsTotal": 1373, "nonReviewPromotions": 0, "continuityOkFalse": 0, "choiceCountLt2": 0, "attrNonzeroFalse": 0 },
+      "distribution": {
+        "bad/BAD": 125, "good/GREAT": 125, "mixed/GREAT": 123, "mixed/GOOD": 2,
+        "random/GREAT": 75, "random/GOOD": 37, "random/MID": 13
+      },
+      "finalRankDist": { "主任": 374, "副主任": 125, "委员": 1 },
+      "promoByPolicy": {
+        "good": { "avg": 3.0, "min": 3, "max": 3 },
+        "bad": { "avg": 1.992, "min": 1, "max": 2 },
+        "random": { "avg": 2.992, "min": 2, "max": 3 },
+        "mixed": { "avg": 3.0, "min": 3, "max": 3 }
+      },
+      "difficultyComparison": "同部门(combo 36/37/38)晋升均值 easy 2.746 > normal 2.528 > hard 2.166;bad 1.992/1.152/0.984、random 2.992/2.96/2.016,与 promotion.ts 难度系数(easy 0.8)及人大晋升 2 星(deptFactor 1.06)一致;阶梯 4 级封顶 3 晋,good 全员到顶"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算(不按行号):标题 bigram≥0.55 / 选项相似度≥0.8(跨步) / 正文相似度≥0.8 / 属性 clamp(prev+effect) / 职级 promoted=>+1",
+      "checked": 30,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "policyCounts": { "good": 7, "bad": 7, "random": 8, "mixed": 8 },
+      "violations": 0,
+      "maxSimilarities": { "title": 0.18, "choice": 0.5, "desc": 0.4 },
+      "fullRecheckAll500": {
+        "method": "另跑全量 500 人:policy=idx%4 / steps=24 / continuity 非空且「」引用==上一步标题 / 每步选项≥2 且每卡≥1 项非零效果 / effectsApplied==所选卡 effect / clamp 数学 / rank 跳变 / promotions 计数 / finalRank 对照 departments.ts 阶梯(代表0/委员1/副主任2/主任3) / 结局按 ending.ts 阈值(easy diffFactor 0.8)独立验算",
+        "checked": 500,
+        "violations": 0,
+        "endingRecomputeMismatches": 0,
+        "finalRankMismatches": 0,
+        "policyMismatches": 0,
+        "continuityRefMismatches": 0,
+        "endingCounts": { "GREAT": 323, "BAD": 125, "GOOD": 39, "MID": 13 },
+        "jsonlRankFixes": 0,
+        "jsonlNonReviewPromotions": 0
+      }
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24(引用全部真实)", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(int100/均分99.5/rank3)", "最弱一步": "step13「防汛值守第一夜」承接「检查组明天到」,两景无剧情交集,仅靠固定衔接语+人物复现串联", "备注": "int S4 顶满 100 后持续加正属 clamp 正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "副主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9 晋)", "结局验算": "BAD 判定正确(int0,(100-0)×0.8=80≥75)", "最弱一步": "step13 同上(全员同叙事骨架)", "备注": "int S19 触 0 后 clamp 不再下降;S9 后 int<35 触发 INTEGRITY_GATE 停止晋升,与 promotion.ts 一致" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GOOD", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S9/S12/S18 晋)", "结局验算": "GOOD 判定正确(int59<70→非GREAT;int≥50 且均分78≥45)", "最弱一步": "step13 同型", "备注": "evalText「平均属性 78 分」=(82+76+95+59)/4 手算一致" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(int100/均分99.25/rank3)", "最弱一步": "step13 同型", "备注": "S8/S17/S18 选省事卡后靠程序卡回满,呈 mixed 形态" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(全100/rank3)", "最弱一步": "step13 同型", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "副主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9 晋)", "结局验算": "BAD 判定正确(int0→80≥75)", "最弱一步": "step13 同型", "备注": "S19 int=0 后 S18 曾回 +5(2→6→0 轨迹合理)" },
+    { "playerIdx": 102, "policy": "random", "promotions": 3, "endingType": "MID", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9/S18 晋)", "结局验算": "MID 判定正确(风险(100-42)×0.8=46.4<75;int42<50 非GOOD;int≥35→MID)", "最弱一步": "step13 同型", "备注": "MID+rank3(主任)组合:rankRatio≥0.5 亦满足 MID 条件,逻辑自洽" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9/S12 晋)", "结局验算": "GREAT 判定正确(int93/均分96.75/rank3)", "最弱一步": "step13 同型", "备注": "前段省事卡多,S6 起程序卡拉升" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S12 晋)", "结局验算": "GREAT 判定正确(int100/均分98.5/rank3)", "最弱一步": "step13 同型", "备注": "random 抽到偏稳路线,S22 顶满后 S23/S24 net 回落 97/94" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(全100/rank3)", "最弱一步": "step13 同型", "备注": "S14/S20 选省事卡(-4/-5 档)仍以 GREAT 收官" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(全100/rank3)", "最弱一步": "step13 同型", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "副主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S9 晋)", "结局验算": "BAD 判定正确(int0→80≥75)", "最弱一步": "step13 同型", "备注": "S12 int 跌破 35 后再无晋升,符合门槛" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S9 晋)", "结局验算": "GREAT 判定正确(全100/rank3)", "最弱一步": "step13 同型", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "副主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9 晋)", "结局验算": "BAD 判定正确(int0→80≥75)", "最弱一步": "step13 同型", "备注": "S16 int=6 后 S18 +3 回 6,数学含负 clamp 全对" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GOOD", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/S9/S15 晋)", "结局验算": "GOOD 判定正确(int69<70;int≥50 且均分71.5≥45)", "最弱一步": "step13 同型", "备注": "evalText「平均属性 72 分」=Math.round(71.5) 一致" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/S6/S12 晋)", "结局验算": "GREAT 判定正确(int88/均分97/rank3)", "最弱一步": "step13 同型", "备注": "尾段三连经营/省事卡压 int 至 88 仍守住 70 线" }
+  ],
+  "observations": [
+    { "kind": "narrative-identical-across-players", "severity": "info(口径豁免)", "detail": "500 玩家的 24 步标题序列、正文、选项文案与开场白逐字节相同(distinct title-sequences=1、distinct openings=1);玩家差异仅来自效果数值抖动与策略选择。mock LLM 批次预期行为,真实多样性见 docs/diversity-report.md。" },
+    { "kind": "continuity-template", "severity": "info", "detail": "11,500 个非首步衔接语全部为同一句式「承接「X」的余波,事情还没完。」;引用的上一步标题 500×23 全部真实存在(0 错配),但 desc 本身为独立新场景,剧情承接仅靠衔接语+固定人物班底(王建国/李淑芬/赵亚男/刘志强/张卫东/陈明理)+年份推进实现。" },
+    { "kind": "choice-scene-mismatch", "severity": "minor(不在六大诉求内)", "detail": "选项四槽原型固定(稳妥但费工/程序优先/经营关系/省事但有代价),文案来自通用动作池,与当步场景仅松散匹配,如 step9「空缺的副科长职位」配「先停职检查再定性」、「会议室的座次牌」配「引入审计专项核查」。" },
+    { "kind": "zero-variance-endings", "severity": "info", "detail": "good 125/125 GREAT 且全部恰好 3 晋到顶(主任);bad 125/125 BAD(廉洁全部归 0);random 0/125 BAD(easy 风险门槛 75 需 int≤6.25,随机策略到不了)。结局对策略区分度高但对局内零方差,系罐装场景+固定选项池的结果。" },
+    { "kind": "bad-single-promotion-outlier", "severity": "info", "detail": "idx369(bad)仅 1 晋、终职级「委员」,为 bad 组唯一未达副主任者;其轨迹数学与结局(BAD)均正确,非违规。" },
+    { "kind": "easy-saturation", "severity": "info", "detail": "good/mixed 玩家约 S13 起四维顶满 100,后续正向效果被 clamp 吞没(数值不变),口径已声明属正常;int 初值 80、起始属性 50/50/50/80 与全量重算一致。" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 名玩家全部完成、meets_requirements 全真、六大诉求 DB 与独立重算均为 0 违例(30 人抽样 0 违规,全量 500 人 JSONL 复核含结局阈值验算 0 错);16 人逐字深读全部通过,结局/职级/属性手工验算全对。主要发现均为观察项:叙事流跨玩家逐字节相同、衔接语单一模板、选项文案与场景松散匹配、结局按策略零方差(mock LLM 口径内)。"
+}

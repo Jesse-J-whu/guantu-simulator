@@ -1,0 +1,101 @@
+{
+  "combo": "caizhi/easy",
+  "comboId": 15,
+  "deptName": "财政部门",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=15",
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "bg_ok": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "track_failures": 0,
+      "violation_rows": [],
+      "stepsTable": { "rows": 12000, "rankFixesSum": 0, "promotionsTotal": 1750, "nonReviewPromotions": 0, "choiceCountNot4": 0, "chosenIdxOutOfRange": 0, "promotionsVsStepsMismatch": 0 },
+      "distribution": {
+        "bad/BAD": 125, "good/GREAT": 125, "mixed/GREAT": 124, "mixed/GOOD": 1,
+        "random/GREAT": 91, "random/GOOD": 27, "random/MID": 7
+      },
+      "promoByPolicy": {
+        "good": { "avg": 4.0, "min": 4, "max": 4 },
+        "bad": { "avg": 2.032, "min": 2, "max": 3 },
+        "random": { "avg": 3.968, "min": 3, "max": 4 },
+        "mixed": { "avg": 4.0, "min": 4, "max": 4 }
+      },
+      "difficultyComparison": "同部门晋升均值 easy 3.5 > normal 2.994 > hard 2.228,符合 promotion.ts 难度系数(easy 0.8)"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算(不信任 DB):标题 bigram≥0.55 / 选项相似度≥0.8(跨步+步内) / 正文相似度≥0.8 / 属性 clamp(prev+effect,基线 50/50/50/80) / effectsApplied=所选选项 effect / 职级 promoted=>+1 且仅发生在 step%3==0 考核步 / finalRank 对照 departments.ts 阶梯 / 结局按 ending.ts 阈值独立验算 / policy=idx%4",
+      "checked": 30,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "violations": 0,
+      "maxSimilarities": { "title": 0.18, "choice": 0.5, "desc": 0.4 },
+      "fullRecheckAll500": { "checked": 500, "violations": 0, "endingRecomputeMismatches": 0, "finalRankMismatches": 0, "policyMismatches": 0, "stepsDoneMismatches": 0 }
+    }
+  },
+  "violations": [],
+  "observations": [
+    {
+      "kind": "narrative-identical-across-players",
+      "severity": "info(口径已豁免)",
+      "detail": "500 名玩家的 24 个标题序列逐字节相同(distinct title 序列=1),全部玩家共用同一 24 个罐装场景单元、同一顺序;玩家间差异仅来自效果数值抖动与策略选择。口径说明已声明 mock LLM 跨玩家相同属预期,故不计违规。"
+    },
+    {
+      "kind": "continuity-template",
+      "severity": "minor-quality",
+      "detail": "全部非首步衔接语均为固定模板「承接「上一步标题」的余波,事情还没完。」(首步「这是你入职后的第一件事。」)。衔接非空且所引上一步标题真实存在,机械口径通过;但 desc 本身是自包含新场景,与上一步剧情无实质承接(如 p0 step13「防汛值守第一夜」接「检查组明天到」,检查组线索未被续写;step15「扶贫村的第一周」接「会议室的座次牌」)。"
+    },
+    {
+      "kind": "choice-desc-semantic-fit",
+      "severity": "minor-quality",
+      "detail": "每步 4 个选项固定走「稳妥但费工/程序优先/经营关系/省事但有代价」四原型槽,文案取自通用动作池,与当步场景仅松散匹配:如「防汛值守第一夜」配「家宴款待关键人物」「收下购物卡再说」(场景无宴请无购物卡,p1/p2/p3/p498/p499 均这样选),「空缺的副科长职位」配「先停职检查再定性」「向媒体朋友介绍情况」。读起来答非所问但 hint/效果/策略一致。"
+    },
+    {
+      "kind": "npc-role-drift",
+      "severity": "minor-quality",
+      "detail": "同一局内 NPC 名字跨场景复用但角色漂移:张卫东在 step3 是施工方老板、step19 变成「财政的张卫东」、step23 又是饭局介绍人;王建国从催件领导变为投标商。罐装单元拼接的痕迹。"
+    },
+    {
+      "kind": "outcome-determinism",
+      "severity": "info",
+      "detail": "策略高度决定结局:good 125/125 全 GREAT 且恰好 4 次晋升到顶(正处级),bad 125/125 全 BAD(廉洁归零,INTEGRITY_GATE=35 后卡 rank2),mixed 124 GREAT+1 GOOD,random 有 GREAT/GOOD/MID 三档。方向符合口径,离散度小。"
+    },
+    {
+      "kind": "initial-integrity-bonus",
+      "severity": "info",
+      "detail": "easy 难度初始属性为 50/50/50/80(廉洁 80),全 500 人一致;与难度系数 0.8 配套,bad 玩家 BAD 阈值相应为廉洁≤6.25。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24(全为固定模板语)", "属性数学": "通过", "职级": "通过(S3/6/9/12 晋升至顶 rank4)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step13 防汛值守第一夜:仅靠模板语衔接「检查组明天到」,检查组线索未续写", "备注": "终态 100/100/100/100" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁触底 0 后夹取不变)", "职级": "通过(S6/9 后廉洁<35 被 INTEGRITY_GATE 暂停,卡 rank2)", "结局验算": "BAD 判定正确(廉洁0→风险(100-0)×0.8=80≥75)", "最弱一步": "step13 同上,且选了「收下购物卡再说」(防汛场景无购物卡)", "备注": "bad=argmax(p+e+n-1.5i),槽位选择与公式一致" },
+    { "playerIdx": 2, "policy": "random", "promotions": 4, "endingType": "MID", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/24,末步考核晋升)", "结局验算": "MID 判定正确(廉洁43<50 不入 GOOD,≥35→MID;均分66.5)", "最弱一步": "step13 同上", "备注": "MID+4次晋升:rankRatio 4/4=0.5 本就保底 MID,判定链正确" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/18)", "结局验算": "GREAT 判定正确(廉洁100/均分97.75/rank4)", "最弱一步": "step13 同上(亦选「收下购物卡再说」)", "备注": "终态 100/97/100/94" },
+    { "playerIdx": 100, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12)", "结局验算": "GREAT 判定正确(四维全 100/rank4)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(廉洁门禁卡 rank2)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/24)", "结局验算": "GOOD 判定正确(廉洁52<70 不入 GREAT,≥50 且均分75≥45;evalText「平均属性 75 分」与实际一致)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/18)", "结局验算": "GREAT 判定正确(四维全 100/rank4)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/9/15/18)", "结局验算": "GREAT 判定正确(廉洁100/均分97.75/rank4;终态100/97/94/100)", "最弱一步": "step13 同上", "备注": "前期偶有差选项后翻盘,轨迹合理" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/15)", "结局验算": "GREAT 判定正确(四维全 100/rank4)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12)", "结局验算": "GREAT 判定正确(四维全 100/rank4)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁 1→0 后夹取正确)", "职级": "通过(S3/9,廉洁跌破 35 后不再晋升)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12)", "结局验算": "GREAT 判定正确(终态100/100/97/100/rank4)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(廉洁门禁卡 rank2)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step13 同上", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/9/12/21)", "结局验算": "GOOD 判定正确(廉洁62/均分84.75,evalText「平均属性 85 分」四舍五入一致)", "最弱一步": "step13 同上(亦选「收下购物卡再说」)", "备注": "" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/15)", "结局验算": "GREAT 判定正确(廉洁97/均分99.25/rank4;终态100/100/100/97)", "最弱一步": "step13 同上(亦选「收下购物卡再说」)", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 名玩家全量 SQL 核验与 30 人抽样(另做全 500 人)独立重算均 0 违规,16 人×24 步逐字深读通过;六大诉求全部满足,结局/职级/属性全部复算一致。需产品侧知晓:衔接语为单一固定模板且 desc 多为新开场景(剧情承接弱)、四槽选项文案取自通用池偶与场景错位(防汛场景配「收下购物卡再说」)、同局 NPC 名字跨角色漂移;good/mixed 策略结局零方差(good 全 4 晋 GREAT、bad 全 BAD 卡 rank2)。"
+}

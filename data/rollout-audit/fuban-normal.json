@@ -1,0 +1,91 @@
+{
+  "combo": "fuban-normal",
+  "comboId": 4,
+  "deptName": "府办（政府办公室）",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "bgOk0": 0,
+      "trackFailures0": 0,
+      "stepsRows": 12000,
+      "stepsPerPlayer": "500x24",
+      "sumPromotionsPlayersTable": 1545,
+      "sumPromotedStepsTable": 1545
+    },
+    "distribution": {
+      "byPolicy": [
+        { "policy": "good", "n": 125, "endings": "GREAT x125", "avgPromotions": 4.0 },
+        { "policy": "bad", "n": 125, "endings": "BAD x125", "avgPromotions": 1.08 },
+        { "policy": "mixed", "n": 125, "endings": "GREAT x123 / GOOD x2", "avgPromotions": 3.96 },
+        { "policy": "random", "n": 125, "endings": "GREAT x82 / GOOD x36 / MID x6 / BAD x1", "avgPromotions": 3.32 }
+      ],
+      "crossDifficultyPromotionAvg": { "fuban-easy": 3.5, "fuban-normal": 3.09, "fuban-hard": 2.276 },
+      "verdict": "good 全 GREAT、bad 全 BAD(廉洁度归零触发落马)、random/mixed 居中;hard<normal<easy 晋升梯度与 promotion.ts 的 0.8/1.0/1.3 难度系数一致,无分布异常"
+    },
+    "independentRecheck": {
+      "template30Sample": { "checked": 30, "violations": 0 },
+      "full500RecomputeFromRawJsonl": { "checked": 500, "violations": 0 },
+      "checks": [
+        "rows=500 且 playerIdx 0..499 唯一(按行内 playerIdx 字段取样,非行号)",
+        "policy == [good,bad,random,mixed][idx%4] 全部匹配",
+        "steps=24、step/year 顺序正确、chosenIdx 合法、每张选项卡至少 1 项非零效果",
+        "effectsApplied == choices[chosenIdx].effect(卡片效果如实生效)",
+        "属性数学 clamp(prev+effect)==attrsAfter 全部 12000 步通过",
+        "rank 只在 promoted=true 时 +1;promotions 字段 == promoted 步数(1545==1545)",
+        "finalRank 与 departments.ts 阶梯 [科员,副科级,正科级,副处级,正处级] 一致",
+        "按 ending.ts 阈值(normal: risk=(100-廉洁)>=75 -> BAD; 廉洁>=70 且均分>=60 且 rank>=2 -> GREAT; ...) 逐人重算 endingType 全部一致",
+        "标题 bigram>=0.55 / 正文 similarity>=0.8 / 选项 similarity>=0.8 / 泛化套话标题: 全 500 人 0 命中",
+        "continuity 引用的「上一步标题」全部真实存在(0 幽灵引用)"
+      ]
+    }
+  },
+  "violations": [],
+  "observations": [
+    {
+      "kind": "quality-observation (非六大诉求违例)",
+      "detail": "衔接语为罐装模板:第 2-24 步全部是「承接「上一步标题」的余波,事情还没完。」。引用的上一步标题真实存在,但新事件与上一事件多为无因果的并列场景,叙事承接是句式级的而非剧情级的。证据: P0 step15「扶贫村的第一周」声称承接「会议室的座次牌」余波,驻村扶贫与摆座次牌无任何剧情关联。"
+    },
+    {
+      "kind": "quality-observation (非六大诉求违例)",
+      "detail": "选项文案来自通用 CHOICE_BANK 按步轮换(server/mockLLM.js 设计),常与场景具体情节脱节。证据: P0 step6「老科长退休托付」(赵亚男传经验)的四张选项是「如实上报数据口径/书面请示分管领导/找纪检熟人通个气/装作不知情回避」,与场景无关;效果数值已按槽位语义绑定(A 稳妥正面/B 程序保守/C 关系运作/D 消极风险),无语义倒挂。"
+    },
+    {
+      "kind": "caliber-note",
+      "detail": "500 名玩家共用同一 30 单元罐装场景序列((step-1)%30),跨玩家标题/正文逐字相同(steps 表 distinct title=24)。属 mock LLM 预期口径(见 docs/audit-prompt-template.md 口径说明与 server/mockLLM.js 头注释),真实 GLM 多样性由 Phase 1 扫描单独验证,不计违规。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/6/12/18步晋升,科员->正处级)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step15 扶贫村的第一周:承接语指向会议室的座次牌,无剧情因果", "备注": "全程清廉路线,后期属性顶格夹取属正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅step6晋升;廉洁跌破35后晋升被暂缓,符合promotion.ts门槛)", "结局验算": "BAD 判定正确(廉洁0,risk=100>=75)", "最弱一步": "step15 同上(罐装承接语)", "备注": "廉洁单调下滑80->0,bad策略行为一致" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GOOD", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/9/18步晋升)", "结局验算": "GOOD 判定正确(廉洁60<70故非GREAT;均分83.5,risk40<75)", "最弱一步": "step14 选「饭局上先应承下来」与座次牌场景关联弱", "备注": "随机策略下中庸结局,分档逻辑正确" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/9/15/21步晋升)", "结局验算": "GREAT 判定正确(廉洁97/均分99.25/rank4)", "最弱一步": "step13 防汛值守承接检查组,仅靠罐装承接语连接", "备注": "mixed 偏clean种子,结局合理" },
+    { "playerIdx": 100, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/6/12/18步晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step17 文件流转失误的选项「按预案启动响应」与场景脱节", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,risk=100)", "最弱一步": "step20 起廉洁夹在0,后续负廉洁效果数值不再变化属夹取正常", "备注": "bad 策略 23/24 步选槽位C/D(关系运作/消极),行为一致" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/9/15/24步晋升)", "结局验算": "GREAT 判定正确(廉洁95/均分96.25/rank4)", "最弱一步": "step20 选「混过检查就翻篇」全负效果,与年度考核谈话场景勉强贴合", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/6/15/24步晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step11 选「让临时工顶在前面」与饭局座次场景脱节", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/15步晋升)", "结局验算": "GREAT 判定正确(廉洁88/均分92.75/rank3>=2)", "最弱一步": "step2 开局即选「睁一只眼闭一只眼」全负,random策略正常", "备注": "rank3仍判GREAT,阈值下限(rank>=2)运用正确" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/9/12/21步晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank4)", "最弱一步": "step21 晋升前一步选「表面配合实际拖延」仍晋升,系绩效点积累所致,机制自洽", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/6/12/18步晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step15 同罐装承接语问题", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,risk=100)", "最弱一步": "step7 bad策略选到正廉洁选项「按老口径先报后补」,系corrupt打平后的argmax并列取首,行为模型正常", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/6/12/18步晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step15 同罐装承接语问题", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(step18廉洁12时选正廉洁选项,下步即回落,符合corrupt打分)", "结局验算": "BAD 判定正确(廉洁0,risk=100)", "最弱一步": "step18 唯一一次正廉洁选择后廉洁12->12->8,数值链正确", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/12/18步晋升)", "结局验算": "GREAT 判定正确(廉洁89/均分91.25/rank3)", "最弱一步": "step4 选「照抄上次材料交差」承接「验收现场的购物卡」,选项未呼应信封情节", "备注": "开局混乱中段转正,曲线真实" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(3/9/12/21步晋升)", "结局验算": "GREAT 判定正确(廉洁94/均分98.5/rank4)", "最弱一步": "step24 结尾「纪检组长突然约谈」选「适度包装自己的政绩」仍光荣退休,廉洁94未触发风险,机制自洽", "备注": "尾段玩家完整,收官正常" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成、六大诉求机械核验与独立重算(30人模板抽样+全量500人原始JSONL重算)均为 0 违例,16名玩家逐字深读并手工验算结局/职级全部正确;PASS。两条非违例观察:衔接语为罐装模板句(引用真实上一步标题但无剧情因果),选项文案来自通用动作池常与场景脱节——均为 server/mockLLM.js 的既定 mock 设计,建议真实 GLM 上线时重点回归这两点。"
+}

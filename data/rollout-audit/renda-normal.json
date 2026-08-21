@@ -1,0 +1,91 @@
+{
+  "combo": "renda/normal",
+  "comboId": 37,
+  "deptName": "人大",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "trackFailures": 0,
+      "stepsTable": { "rows": 12000, "stepsDoneAll24": true, "rankFixes": 0 },
+      "distribution": [
+        { "policy": "bad", "endingType": "BAD", "n": 125, "avgPromotions": 1.152, "minPromotions": 1, "maxPromotions": 2 },
+        { "policy": "good", "endingType": "GREAT", "n": 125, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 3 },
+        { "policy": "mixed", "endingType": "GOOD", "n": 1, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 3 },
+        { "policy": "mixed", "endingType": "GREAT", "n": 124, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 3 },
+        { "policy": "random", "endingType": "BAD", "n": 2, "avgPromotions": 1.5, "minPromotions": 1, "maxPromotions": 2 },
+        { "policy": "random", "endingType": "GOOD", "n": 24, "avgPromotions": 2.96, "minPromotions": 2, "maxPromotions": 3 },
+        { "policy": "random", "endingType": "GREAT", "n": 84, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 3 },
+        { "policy": "random", "endingType": "MID", "n": 15, "avgPromotions": 2.93, "minPromotions": 2, "maxPromotions": 3 }
+      ],
+      "difficultyGradientPromotionsAvg": { "easy(combo36)": 2.746, "normal(combo37)": 2.528, "hard(combo38)": 2.166 }
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算(标题bigram≥0.55/选项与正文相似度≥0.8/属性clamp数学/职级跳变),并加验 policy匹配、步数=24、continuity非空、每选项效果≥1非零、promotions计数",
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "checked": 30,
+      "violations": 0
+    },
+    "narrativeUniformity": {
+      "distinctTitleSequences": 1,
+      "titleDescContinuityChoiceTextDiffsAcross500": 0,
+      "distinctChoiceTextsInCombo": 96,
+      "distinctHintsInCombo": 4,
+      "note": "mock LLM 预期行为(口径说明:跨玩家重复不算违规);选项 effect 数值在玩家间有抖动"
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "promotionSteps": [3, 9, 12], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1→2→3,仅promoted步+1)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 15 扶贫村的第一周 — 承接「会议室的座次牌」仅模板句,座次牌剧情与驻村无实际承接", "备注": "attr 全线 100 后 clamp 不变属正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "promotionSteps": [6, 12], "endingType": "BAD", "finalRank": "副主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1→2)", "结局验算": "BAD 判定正确(廉洁0→风险(100-0)*1.0=100≥75)", "最弱一步": "step 13 防汛值守第一夜 — 上一步「检查组明天到」的台账/补手续线被完全丢弃", "备注": "bad 全程C槽,廉洁 step21 归 0 后 clamp" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "promotionSteps": [6, 12, 24], "endingType": "MID", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1→2→3)", "结局验算": "MID 判定正确(廉洁44→风险56<75;44<50不达GOOD;44≥35入MID)", "最弱一步": "step 15 扶贫村的第一周 — 同上,衔接语为纯模板", "备注": "最后一步才升主任,节奏尚可" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "promotionSteps": [6, 12, 18], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1→2→3)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13 防汛值守第一夜 — 与「检查组明天到」无因果", "备注": "开局两步A/C槽混选后转B槽" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "promotionSteps": [3, 6, 12], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 22 家属院的求助 — 招标质疑→水管爆裂,主题跳变", "备注": "选项文案与场景错位最明显的一步:水管爆裂场景给出「书面建议暂缓通过/按批次统一处理」等公文审批动作" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "promotionSteps": [6], "endingType": "BAD", "finalRank": "委员", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1)", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step 13 防汛值守第一夜 — 剧情断裂同前", "备注": "廉洁 step19 归 0 后持续 clamp,评价文案如实反映" },
+    { "playerIdx": 102, "policy": "random", "promotions": 3, "promotionSteps": [3, 12, 21], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁76/均分87.3/rank3)", "最弱一步": "step 21 招标现场的质疑 — 中段剧情彼此独立,仅靠模板句串联", "备注": "step21 选C槽(integrity-5)仍当步晋升,符合绩效点考核机制(考核步+点数达标),非违例" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "promotionSteps": [3, 9, 15], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁96/均分99/rank3)", "最弱一步": "step 18 民主生活会的发言 — 与「文件流转的失误」无承接", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "promotionSteps": [3, 9, 15], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁97/均分99.2/rank3)", "最弱一步": "step 17 文件流转的失误 — 上一步「接待工作」与涉密文件无关联", "备注": "" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "promotionSteps": [3, 9, 15], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 4 两位领导方案之争 — 购物卡事件后无回响", "备注": "step4/5/9 三次D/C槽劣选未改变结局走向" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "promotionSteps": [3, 9, 12], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.2/rank3)", "最弱一步": "step 15 扶贫村的第一周 — 模板衔接", "备注": "step24 选A槽致 network 97,其余 100" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "promotionSteps": [6], "endingType": "BAD", "finalRank": "委员", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1)", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step 13 防汛值守第一夜 — 剧情断裂同前", "备注": "全程24/24选C槽,廉洁单调降到0" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "promotionSteps": [3, 9, 12], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 16 接待工作的细节 — 扶贫村到接待调研跳变", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "promotionSteps": [6], "endingType": "BAD", "finalRank": "委员", "衔接": "24/24", "属性数学": "通过", "职级": "通过(0→1)", "结局验算": "BAD 判定正确(廉洁0→风险100≥75)", "最弱一步": "step 18 逐级签字审批 — bad 策略中唯一B槽,廉洁短暂回升5后再归0", "备注": "策略行为非纯一成不变,合理" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "promotionSteps": [6, 12, 24], "endingType": "MID", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "MID 判定正确(廉洁36→风险64<75;36<50不达GOOD;36≥35入MID)", "最弱一步": "step 23→24 值班室信封到纪检约谈 — 该衔接反而是全批中因果最强的一处", "备注": "random 在廉洁35门槛附近走出 MID,验证分档边界正确" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "promotionSteps": [6, 9, 15], "endingType": "GREAT", "finalRank": "主任", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.2/rank3)", "最弱一步": "step 7 拖到风头过去再说 — 与老科长托付场景不合(选项池通用化问题)", "备注": "" }
+  ],
+  "findings": [
+    {
+      "kind": "observation-nonblocking",
+      "title": "选项文案来自通用槽位池,与场景语义脱节",
+      "detail": "全部 500 人共用 96 条选项文案与 4 条 hint(稳妥但费工/程序优先/经营关系/省事但有代价),每步 4 槽固定。多处选项在场景中不成立: step2「一把手点名调研」(选随行记录员)给出「睁一只眼闭一只眼」;step5「信访群众围堵办公楼」给出「与竞争者私下沟通」(场景无竞争者);step22「家属院的求助」(水管爆裂)给出「书面建议暂缓通过/按批次统一处理」等公文动作;step13「防汛值守」给出「收下购物卡再说」。mock LLM 口径下不算违例,但若直接面向真实用户会明显损伤代入感。",
+      "evidence": "data/rollout-traj/renda-normal.jsonl playerIdx=100 step22; distinct choice texts=96, hints=4"
+    },
+    {
+      "kind": "observation-nonblocking",
+      "title": "衔接语为纯模板句,desc 与上一步剧情多为平行无关",
+      "detail": "step2-24 的 continuity 全部是同一句式「承接「上一步标题」的余波,事情还没完。」(提及的标题真实存在,机械合规),但 desc 本身多为独立事件单元,仅靠模板句串联。衔接最弱: step14「会议室的座次牌」→step15「扶贫村的第一周」、step12「检查组明天到」→step13「防汛值守第一夜」。反例(衔接较好): step23「值班室的不速之客(信封)」→step24「纪检组长突然约谈」。",
+      "evidence": "500 玩家 continuity/desc 跨玩家 0 差异,句式单一"
+    },
+    {
+      "kind": "observation-nonblocking",
+      "title": "晋升天花板效应:good/mixed 玩家全部满分同质结局",
+      "detail": "good 125/125 与 mixed 124/125 均 GREAT 且 promotions=3(人大阶梯 4 级到顶),多在 step12-15 即升满主任,其后 9-12 步无职级变化;多数 good 玩家终局四维全 100。策略区分度存在(good 全 GREAT / bad 全 BAD / random 分散),但 top 路径完全同质,缺少 GOOD/MID 中间态。",
+      "evidence": "SQL 分布表;深读 0/100/252/448 四名 good 玩家轨迹几乎仅 effect 抖动不同"
+    }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成且六大诉求机械核验全 0 违例;30 人独立重算 0 违例;16 人逐字深读(384 步)属性数学/职级/结局分档全部亲手验算正确,good全GREAT、bad全BAD、random 分散、晋升均值 easy2.75>normal2.53>hard2.17 符合设计。3 条非阻塞观察:选项池通用化与场景脱节、衔接语纯模板、good/mixed 顶端同质满分。"
+}

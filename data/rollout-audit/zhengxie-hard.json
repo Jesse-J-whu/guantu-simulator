@@ -1,0 +1,69 @@
+{
+  "combo": "zhengxie/hard",
+  "comboId": 35,
+  "deptName": "政协",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=35",
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "stepsTable": { "rows": 12000, "minContinuityOk": 1, "maxRankFixes": 0, "choiceCountMin": 4, "choiceCountMax": 4, "minAttrNonzero": 1, "rankRange": [0, 2], "promotedSteps": 874 }
+    },
+    "distribution": {
+      "policy_ending": {
+        "good|GREAT": 125, "bad|BAD": 125,
+        "mixed|GREAT": 124, "mixed|GOOD": 1,
+        "random|GREAT": 86, "random|GOOD": 31, "random|MID": 2, "random|BAD": 6
+      },
+      "promotionsByPolicy": { "good": "avg 2.0 (min2 max2)", "bad": "avg 1.0 (min1 max1)", "mixed": "avg 2.0", "random": "avg 1.992 (min1 max2)" },
+      "difficultyComparison": "zhengxie promotions avg: easy(combo33)=2.0 > normal(34)=1.778 > hard(35)=1.748 — hard 晋升更难,符合 promotion.ts 设计(hard×1.3, 政协晋升2星→deptFactor 1.06)"
+    },
+    "independentRecheck": { "checked": 30, "violations": 0, "sample": "idx 0-7,120-127,360-367,490-495(按行内 playerIdx 过滤)", "checks": "标题bigram>=0.55 / 选项与正文相似度>=0.8 / 属性clamp数学 / 职级跳变 / 步数=24 / promotions与promoted步数一致" },
+    "extraAll500RecheckFromRawJsonl": {
+      "endingRecompute": "500/500 与 ending.ts 阈值一致(BAD:(100-廉洁)×1.3>=75; GREAT:廉洁>=70且均分>=60且rank>=2; 其余分档)",
+      "finalRankVsLadder": "500/500 与 departments.ts 阶梯[委员,常委,副主席]一致",
+      "policyVsIdx": "500/500 = ['good','bad','random','mixed'][idx%4]",
+      "continuityRefResolve": "12000/12000 衔接语「上一步标题」真实存在且逐字匹配",
+      "effectsAppliedVsChosenChoice": "500/500 一致",
+      "evalTextNumbers": "与最终属性一致(检查器曾报175条均为脚本误报:BAD文案格式为『廉洁度只剩X分』、MID模板不含数值、GOOD均分x.5时JS Math.round进位)"
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank2)", "最弱一步": "step 13 防汛值守第一夜:衔接仅套话『承接…余波』且选项(收下购物卡/家宴款待)与汛情场景不贴", "备注": "全程选稳妥/程序系,无重复" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "常委", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,风险130≥75)", "最弱一步": "step 13 同上,选项与场景错位", "备注": "s9晋升后廉洁跌破35门槛,再无晋升,机制自洽" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "promoSteps": [9, 18], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁89/均分90.75/rank2)", "最弱一步": "step 13(同上)", "备注": "随机选择仍多以稳妥系收尾" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 2, "promoSteps": [9, 18], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁87/均分92/rank2)", "最弱一步": "step 13(同上)", "备注": "夹杂s13/s15/s20取巧选项,廉洁被夹回100属clamp正常" },
+    { "playerIdx": 100, "policy": "good", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(四维全100)", "最弱一步": "step 13(同上)", "备注": "与idx0同因mock确定性,文案逐字相同" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "常委", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,风险130)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "promoSteps": [9, 18], "endingType": "GOOD", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GOOD 判定正确(廉洁66<70未达GREAT,≥50且均分83.75≥45)", "最弱一步": "step 13(同上)", "备注": "31名random/GOOD之一,评语『平均属性84分』与属性一致" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank2)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "promoSteps": [9, 15], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁72/均分79/rank2,擦线过70)", "最弱一步": "step 13(同上)", "备注": "第二次晋升落在s15,节奏与旁人不同,合理" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁97/均分99.25/rank2)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(四维全100)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "常委", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,风险130)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 2, "promoSteps": [6, 12], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(四维全100)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "常委", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,风险130)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "promoSteps": [9, 18], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁74/均分72.5→72/rank2)", "最弱一步": "step 13(同上)", "备注": "" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 2, "promoSteps": [9, 15], "endingType": "GREAT", "finalRank": "副主席", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分98.25/rank2)", "最弱一步": "step 13(同上)", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成且六大诉求零违例:SQL全量+30人抽样独立重算+全500人结局/职级/衔接/效果重算均0问题,16人逐字深读全部通过;PASS(仅有的弱点是mock选项池与个别场景语义错位、衔接语模板化,均为mock口径内的已知限制,不构成违例)。",
+  "notes": [
+    "跨玩家事件文案100%相同(0 diff)且 bad全BAD/1晋升、good全GREAT/2晋升 —— 由确定性MockLLM+argmax策略决定,属口径说明预期,非违例;多样性已由Phase 1真API扫描另行验证(docs/diversity-report.md)。",
+    "观察项(非违例):选项文案取自槽位原型池,hint固定为 稳妥但费工/程序优先/经营关系/省事但有代价,个别选项与场景不贴(如step13防汛值守出现『收下购物卡再说』);衔接语固定为『承接「X」的余波,事情还没完』模板但引用的上一步标题始终真实存在。"
+  ]
+}

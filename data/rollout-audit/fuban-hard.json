@@ -1,0 +1,79 @@
+{
+  "combo": "fuban/hard",
+  "comboId": 5,
+  "deptName": "府办（政府办公室）",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "bgOk": 500,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "trackFailures": 0,
+      "avgPromotions": 2.276,
+      "minPromotions": 1,
+      "maxPromotions": 3
+    },
+    "independentRecheck": {
+      "checked": 30,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "samplingMethod": "按行内 playerIdx 字段过滤(实测本文件行号==playerIdx,与按行号等价,但取样仍走字段)",
+      "violations": 0,
+      "details": "标题bigram重复0/30人;选项相似度重复0;desc重复0;属性数学 clamp(prev+effect) 0错;职级跳变0错;policy==['good','bad','random','mixed'][idx%4] 全部吻合;steps=24 全部吻合;缺失玩家0"
+    },
+    "fullFileRecheck": {
+      "players": 500,
+      "endingRecomputed": 500,
+      "endingMismatch": 0,
+      "finalRankMismatch": 0,
+      "promotionCountMismatch": 0,
+      "continuityRefBroken": 0,
+      "allZeroEffectChoices": 0,
+      "totalChoices": 48000,
+      "netZeroTradeoffChoices": 950
+    }
+  },
+  "distribution": {
+    "byPolicy": {
+      "good": { "GREAT": 125, "avgPromotions": 3.0 },
+      "bad": { "BAD": 125, "avgPromotions": 1.0 },
+      "mixed": { "GREAT": 123, "GOOD": 2, "avgPromotions": 2.94 },
+      "random": { "GREAT": 91, "GOOD": 24, "MID": 6, "BAD": 4, "avgPromotions": 2.26 }
+    },
+    "finalRank": { "副处级": 264, "正科级": 110, "副科级": 126 },
+    "difficultyComparison": "fuban easy avg promotions 3.5 > normal 3.09 > hard 2.276,与 promotion.ts DIFFICULTY_FACTOR(hard=1.3)一致",
+    "verdict": "good全GREAT、bad全BAD、random多档分布,合理;无分布异常"
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13 防汛值守第一夜:与上一步「检查组明天到」无剧情承接,仅靠模板衔接语硬连", "备注": "24标题/正文/选项互不重复;第13步起四维全夹取100" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,(100-0)×1.3=130≥75)", "最弱一步": "step 20-24 廉洁已夹取0仍连续负廉洁,数值不变属夹取正常", "备注": "第19步起廉洁夹0" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "promoSteps": [6, 15], "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁85/均分85/rank2)", "最弱一步": "step 10 审批窗口老同学→step 11 饭局座次,场景跳转无承接", "备注": "" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 24], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁76/均分91.75/rank3)", "最弱一步": "step 12 选负面选项「会前先给对方透题」仍在考核步晋升", "备注": "绩效点累积触发考核晋升,符合 promotion.ts 设计,非违规" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 14 会议室座次牌与防汛值守无承接", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,130≥75)", "最弱一步": "step 18 唯一选了正面选项,前后剧情无呼应", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "promoSteps": [9, 18], "endingType": "MID", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "MID 判定正确(风险(100-47)×1.3=68.9<75,廉洁47<50落空GOOD,≥35入MID)", "最弱一步": "step 19 跨部门协调会承接民主生活会,无实际关联", "备注": "random策略MID样本(全批6例之一)" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "promoSteps": [6, 15, 24], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分98/rank3)", "最弱一步": "step 15 选负面「帮忙遮掩数据缺口」仍晋升(考核步累积点数)", "备注": "同p3,设计内行为" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "promoSteps": [6, 15], "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁73/均分83/rank2)", "最弱一步": "step 2 睁一只眼闭一只眼与调研名额竞争无承接", "备注": "" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 24], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13 防汛值守承接检查组,无剧情关联", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank3)", "最弱一步": "step 24 廉洁100下夹取,desc与约谈紧张氛围略错位", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,130≥75)", "最弱一步": "step 18 选正面选项后剧情仍直线下滑,无回响", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 21 招标质疑承接年度考核谈话,无关联", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0,130≥75)", "最弱一步": "step 10-11 廉洁35→29→24连续失分,选项与场景关联弱", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "promoSteps": [9, 15], "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁78/均分84.75/rank2)", "最弱一步": "step 20 选「混过检查就翻篇」与考核谈话场景勉强贴合", "备注": "" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 21], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁84/均分92/rank3)", "最弱一步": "step 21 考核步选「替熟人打招呼说情」(廉洁-5)仍晋升", "备注": "设计内行为;第24步选负面选项收官" }
+  ],
+  "verdict": "PASS",
+  "summary": "fuban/hard 500人全部完成,SQL全量核验12项SUM全0;30人独立重算0违规;16人逐字深读(24步全读)衔接/去重/属性/职级/结局全部通过,500人结局按ending.ts阈值重算0偏差;无真实违例。最值得注意:全批500人共用同一条24场景固定序列(24个标题/24段正文/96条选项文案,标题序列唯一),系mock罐装场景的预期行为(真实GLM多样性已在docs/diversity-report.md单独验证),但衔接语为固定模板「承接「上一步标题」的余波」、选项文案取自4类原型池(如防汛夜值可选「收下购物卡再说」),真实LLM接入前需关注选项与场景的语义贴合度。"
+}
