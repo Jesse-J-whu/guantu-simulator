@@ -200,7 +200,7 @@ adb.exec(`
     dept_id TEXT, dept_name TEXT, difficulty TEXT,
     steps_done INTEGER, completed INTEGER, ending_type TEXT, final_rank TEXT,
     promotions INTEGER, bg_ok INTEGER,
-    continuity_missing INTEGER, title_dup INTEGER, choice_dup INTEGER, generic_titles INTEGER,
+    continuity_missing INTEGER, title_dup INTEGER, choice_dup INTEGER, desc_dup INTEGER, generic_titles INTEGER,
     attr_zero_offered INTEGER, attr_not_applied INTEGER, rank_residual INTEGER, illegal_rank_change INTEGER,
     llm_errors INTEGER, track_failures INTEGER, duration_ms INTEGER, meets_requirements INTEGER
   );
@@ -213,7 +213,7 @@ adb.exec(`
   CREATE INDEX idx_players_combo ON players(combo_id);
   CREATE INDEX idx_steps_combo ON steps(combo_id, player_idx);
 `);
-const insPlayer = adb.prepare(`INSERT INTO players VALUES (${Array.from({ length: 27 }, () => '?').join(', ')})`);
+const insPlayer = adb.prepare(`INSERT INTO players VALUES (${Array.from({ length: 28 }, () => '?').join(', ')})`);
 const insStep = adb.prepare(`INSERT INTO steps VALUES (${Array.from({ length: 14 }, () => '?').join(', ')})`);
 const stepBuf: unknown[][] = [];
 const playerBuf: unknown[][] = [];
@@ -246,7 +246,7 @@ interface PlayerResult {
   steps: StepRec[]; bgOk: boolean; openingText: string;
   endingType: string; endingTitle: string; finalRank: string; evalText: string;
   promotions: number;
-  continuityMissing: number; titleDup: number; choiceDup: number; genericTitles: number;
+  continuityMissing: number; titleDup: number; choiceDup: number; descDup: number; genericTitles: number;
   attrZeroOffered: number; attrNotApplied: number; rankResidual: number; illegalRankChange: number;
   llmErrors: number; trackFailures: number; durationMs: number;
 }
@@ -270,7 +270,7 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
     steps: [], bgOk: false, openingText: '',
     endingType: '', endingTitle: '', finalRank: '', evalText: '',
     promotions: 0,
-    continuityMissing: 0, titleDup: 0, choiceDup: 0, genericTitles: 0,
+    continuityMissing: 0, titleDup: 0, choiceDup: 0, descDup: 0, genericTitles: 0,
     attrZeroOffered: 0, attrNotApplied: 0, rankResidual: 0, illegalRankChange: 0,
     llmErrors: 0, trackFailures: 0, durationMs: 0,
   };
@@ -294,6 +294,7 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
 
   const usedTitles: string[] = [];
   const usedChoiceTexts: string[] = [];
+  const usedDescs: string[] = []; [];
 
   for (let step = 0; step < MAX_STEPS; step++) {
     try {
@@ -309,6 +310,8 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
       if (!(event.continuity || '').trim()) r.continuityMissing++;
       if (isGenericTitle(event.title)) r.genericTitles++;
       if (usedTitles.some((t) => titleSimilarity(t, event.title) >= TITLE_DUP_THRESHOLD)) r.titleDup++;
+      // 诉求2:事件正文(玩家直接阅读的大段文案)也不得与此前雷同。
+      if (usedDescs.some((t) => similarity(t, event.desc) >= CHOICE_DUP_THRESHOLD)) r.descDup++;
       for (const c of event.choices) {
         // 诉求3:任何选项卡至少 1 项属性非零。
         if (c.effect.politics === 0 && c.effect.execute === 0
@@ -342,6 +345,7 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
       }
 
       usedTitles.push(event.title);
+      usedDescs.push(event.desc);
       for (const c of event.choices) usedChoiceTexts.push(c.text);
 
       const tl: TimelineEntry = next.timeline[next.timeline.length - 1];
@@ -437,14 +441,15 @@ const worker = async () => {
     // 合规入库。
     const meets = res.endingType !== 'ABORTED' && res.llmErrors === 0
       && res.continuityMissing === 0 && res.titleDup === 0 && res.choiceDup === 0
-      && res.genericTitles === 0 && res.attrZeroOffered === 0 && res.attrNotApplied === 0
+      && res.descDup === 0 && res.genericTitles === 0 && res.attrZeroOffered === 0
+      && res.attrNotApplied === 0
       && res.rankResidual === 0 && res.illegalRankChange === 0 && res.finalRank !== '';
     playerBuf.push([
       res.comboId, res.playerIdx, res.sessionId, res.policy, res.seed, res.ip,
       res.deptId, res.deptName, res.difficulty,
       res.steps.length, res.endingType !== 'ABORTED' ? 1 : 0, res.endingType, res.finalRank,
       res.promotions, res.bgOk ? 1 : 0,
-      res.continuityMissing, res.titleDup, res.choiceDup, res.genericTitles,
+      res.continuityMissing, res.titleDup, res.choiceDup, res.descDup, res.genericTitles,
       res.attrZeroOffered, res.attrNotApplied, res.rankResidual, res.illegalRankChange,
       res.llmErrors, res.trackFailures, res.durationMs, meets ? 1 : 0,
     ]);
@@ -481,6 +486,7 @@ const byCombo = adb.prepare(`
          SUM(continuity_missing) AS continuity_missing,
          SUM(title_dup) AS title_dup,
          SUM(choice_dup) AS choice_dup,
+         SUM(desc_dup) AS desc_dup,
          SUM(generic_titles) AS generic_titles,
          SUM(attr_zero_offered) AS attr_zero_offered,
          SUM(attr_not_applied) AS attr_not_applied,
@@ -511,6 +517,7 @@ const summary = {
   continuityMissing: num('continuity_missing'),
   titleDup: num('title_dup'),
   choiceDup: num('choice_dup'),
+  descDup: num('desc_dup'),
   genericTitles: num('generic_titles'),
   attrZeroOffered: num('attr_zero_offered'),
   attrNotApplied: num('attr_not_applied'),

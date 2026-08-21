@@ -28,7 +28,7 @@ if (files.length === 0) {
 
 const upd = db.prepare(`
   UPDATE players SET steps_done=?, completed=?, ending_type=?, final_rank=?, promotions=?, bg_ok=?,
-    continuity_missing=?, title_dup=?, choice_dup=?, generic_titles=?, attr_zero_offered=?,
+    continuity_missing=?, title_dup=?, choice_dup=?, desc_dup=?, generic_titles=?, attr_zero_offered=?,
     attr_not_applied=?, rank_residual=?, illegal_rank_change=?, meets_requirements=?
   WHERE combo_id=? AND player_idx=?
 `);
@@ -53,6 +53,7 @@ for (const f of files) {
     let continuityMissing = 0;
     let titleDup = 0;
     let choiceDup = 0;
+    let descDup = 0;
     let genericTitles = 0;
     let attrZeroOffered = 0;
     let attrNotApplied = 0;
@@ -61,6 +62,7 @@ for (const f of files) {
 
     const usedTitles: string[] = [];
     const usedChoices: string[] = [];
+    const usedDescs: string[] = [];
     let prevRank = 0;
     // 初始属性与 createGame 一致。
     let prevAttrs: Record<string, number> = { politics: 50, execute: 50, network: 50, integrity: 80 };
@@ -69,6 +71,7 @@ for (const f of files) {
       if (!(s.continuity || '').trim()) continuityMissing++;
       if (isGenericTitle(s.title)) genericTitles++;
       if (usedTitles.some((t) => titleSimilarity(t, s.title) >= TITLE_DUP_THRESHOLD)) titleDup++;
+      if (usedDescs.some((t) => similarity(t, s.desc) >= CHOICE_DUP_THRESHOLD)) descDup++;
       for (const c of s.choices) {
         if (ATTR_KEYS.every((k) => (c.effect[k] ?? 0) === 0)) attrZeroOffered++;
         if (usedChoices.some((t) => similarity(t, c.text) >= CHOICE_DUP_THRESHOLD)) choiceDup++;
@@ -89,30 +92,31 @@ for (const f of files) {
       prevAttrs = s.attrsAfter;
 
       usedTitles.push(s.title);
+      usedDescs.push(s.desc);
       for (const c of s.choices) usedChoices.push(c.text);
     }
 
     const completed = p.endingType !== 'ABORTED' && p.steps.length > 0;
     const meets = completed && continuityMissing === 0 && titleDup === 0 && choiceDup === 0
-      && genericTitles === 0 && attrZeroOffered === 0 && attrNotApplied === 0
+      && descDup === 0 && genericTitles === 0 && attrZeroOffered === 0 && attrNotApplied === 0
       && rankResidual === 0 && illegalRankChange === 0 && p.finalRank !== '';
 
     const old = db.prepare(
-      'SELECT continuity_missing,title_dup,choice_dup,generic_titles,attr_zero_offered,attr_not_applied,rank_residual,illegal_rank_change FROM players WHERE combo_id=? AND player_idx=?',
+      'SELECT continuity_missing,title_dup,choice_dup,desc_dup,generic_titles,attr_zero_offered,attr_not_applied,rank_residual,illegal_rank_change FROM players WHERE combo_id=? AND player_idx=?',
     ).get(p.comboId, p.playerIdx) as Record<string, number> | undefined;
     upd.run(
       p.steps.length, completed ? 1 : 0, p.endingType, p.finalRank, p.promotions, p.bgOk ? 1 : 0,
-      continuityMissing, titleDup, choiceDup, genericTitles, attrZeroOffered,
+      continuityMissing, titleDup, choiceDup, descDup, genericTitles, attrZeroOffered,
       attrNotApplied, rankResidual, illegalRankChange, meets ? 1 : 0,
       p.comboId, p.playerIdx,
     );
     if (old && (
       old.continuity_missing !== continuityMissing || old.title_dup !== titleDup
-      || old.choice_dup !== choiceDup || old.generic_titles !== genericTitles
+      || old.choice_dup !== choiceDup || old.desc_dup !== descDup || old.generic_titles !== genericTitles
       || old.attr_zero_offered !== attrZeroOffered || old.attr_not_applied !== attrNotApplied
       || old.rank_residual !== rankResidual || old.illegal_rank_change !== illegalRankChange
     )) {
-      globalDrift.push(`${comboTag}#${p.playerIdx}: ${JSON.stringify(old)} → ${JSON.stringify({ continuityMissing, titleDup, choiceDup, genericTitles, attrZeroOffered, attrNotApplied, rankResidual, illegalRankChange })}`);
+      globalDrift.push(`${comboTag}#${p.playerIdx}: ${JSON.stringify(old)} → ${JSON.stringify({ continuityMissing, titleDup, choiceDup, descDup, genericTitles, attrZeroOffered, attrNotApplied, rankResidual, illegalRankChange })}`);
     }
     recomputed++;
   }
@@ -126,7 +130,8 @@ const byCombo = db.prepare(`
   SELECT combo_id, dept_id, dept_name, difficulty,
          COUNT(*) AS players, SUM(completed) AS completed, SUM(meets_requirements) AS meets,
          SUM(continuity_missing) AS continuity_missing, SUM(title_dup) AS title_dup,
-         SUM(choice_dup) AS choice_dup, SUM(generic_titles) AS generic_titles,
+         SUM(choice_dup) AS choice_dup,
+         SUM(desc_dup) AS desc_dup, SUM(generic_titles) AS generic_titles,
          SUM(attr_zero_offered) AS attr_zero_offered, SUM(attr_not_applied) AS attr_not_applied,
          SUM(rank_residual) AS rank_residual, SUM(illegal_rank_change) AS illegal_rank_change,
          SUM(llm_errors) AS llm_errors, AVG(promotions) AS avg_promotions, AVG(duration_ms) AS avg_duration_ms
@@ -151,6 +156,7 @@ const summary = {
   continuityMissing: num('continuity_missing'),
   titleDup: num('title_dup'),
   choiceDup: num('choice_dup'),
+  descDup: num('desc_dup'),
   genericTitles: num('generic_titles'),
   attrZeroOffered: num('attr_zero_offered'),
   attrNotApplied: num('attr_not_applied'),
