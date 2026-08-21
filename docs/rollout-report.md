@@ -122,6 +122,10 @@
 
 ## 复现
 
+合入前全量 gate(最终代码,typecheck ✓ / vitest 127/127 ✓ / build ✓
+(dist 253.90KB gzip 84.91KB)/ Playwright E2E 3/3 ✓,截图存
+`data/e2e-final-results/`):
+
 ```bash
 # 全量 rollout(实测 1,962s ≈ 33 分钟)
 NODE_OPTIONS=--experimental-sqlite npx tsx scripts/mass-rollout.mts
