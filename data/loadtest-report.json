@@ -1,0 +1,149 @@
+{
+  "startedAt": "2026-08-21T06:19:00.624Z",
+  "port": 3398,
+  "workers": 8,
+  "scenarios": [
+    {
+      "name": "S1 静态首页 /",
+      "connections": 200,
+      "rps": 40830607,
+      "reqs": 454376,
+      "p50": 8,
+      "p99": 18,
+      "max": 214,
+      "errors": 0,
+      "readMB": null
+    },
+    {
+      "name": "S2 静态资源 3件套",
+      "connections": 200,
+      "rps": 697188766,
+      "reqs": 151188,
+      "p50": 25,
+      "p99": 53,
+      "max": 122,
+      "errors": 0,
+      "readMB": null
+    },
+    {
+      "name": "S3 用户API流水线(7请求)",
+      "connections": 200,
+      "rps": 6427364,
+      "reqs": 186651,
+      "p50": 10,
+      "p99": 107,
+      "max": 2161,
+      "errors": 0,
+      "readMB": null
+    },
+    {
+      "name": "S4 峰值脉冲500并发",
+      "connections": 500,
+      "rps": 7220448,
+      "reqs": 99163,
+      "p50": 31,
+      "p99": 206,
+      "max": 2559,
+      "errors": 0,
+      "readMB": null
+    }
+  ],
+  "serverStats": {
+    "generatedAt": "2026-08-21T06:20:02.234Z",
+    "visits": {
+      "total": 693485,
+      "uniqueIps": 1,
+      "last24h": 693485,
+      "last24hUniqueIps": 1
+    },
+    "requests": {
+      "total": 693485,
+      "lastHour": 693485,
+      "perMinuteLastHour": 683180,
+      "avgDurationMs": 1,
+      "slowestPaths": [
+        {
+          "path": "/api/stats",
+          "avgDur": 1.1588440870316787,
+          "hits": 26611
+        },
+        {
+          "path": "/api/track/choice",
+          "avgDur": 1.1378659641649385,
+          "hits": 53523
+        },
+        {
+          "path": "/api/track/start",
+          "avgDur": 1.0624266862170089,
+          "hits": 27280
+        },
+        {
+          "path": "/api/track/end",
+          "avgDur": 1.0183954649547622,
+          "hits": 26637
+        },
+        {
+          "path": "/",
+          "avgDur": 0.6321784922394679,
+          "hits": 505120
+        },
+        {
+          "path": "/api/llm-proxy",
+          "avgDur": 0.10269911993224583,
+          "hits": 54314
+        }
+      ]
+    },
+    "retention": {
+      "oneMinute": 0.5,
+      "visitors24h": 2,
+      "retainedVisitors": 1
+    },
+    "sessions": {
+      "started": 2,
+      "completed": 2,
+      "completionRate": 1,
+      "avgDurationMs": 0,
+      "avgSteps": 2,
+      "byEnding": [
+        {
+          "type": "MID",
+          "count": 2
+        }
+      ],
+      "byDept": [
+        {
+          "dept": "weiban",
+          "count": 2,
+          "ended": 2
+        }
+      ],
+      "recent": [
+        {
+          "session_id": "loadtest-2",
+          "dept_name": "",
+          "difficulty": "normal",
+          "steps_done": 2,
+          "ending_type": "MID",
+          "final_rank": "科员",
+          "promotions": 0,
+          "duration_ms": 0,
+          "ended": 1,
+          "created_at": 1787293201999
+        },
+        {
+          "session_id": "loadtest-1",
+          "dept_name": "",
+          "difficulty": "normal",
+          "steps_done": 2,
+          "ending_type": "MID",
+          "final_rank": "科员",
+          "promotions": 0,
+          "duration_ms": 0,
+          "ended": 1,
+          "created_at": 1787293181714
+        }
+      ]
+    }
+  }
+}
