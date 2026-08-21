@@ -17,11 +17,9 @@ export function EventCard({ event, year, attrs, disabled, chosenIdx, onChoose }:
   const [visible, setVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // 入场动画:由 CSS 类的 .event-visible 控制可见性/位移(纯 class,不写内联 opacity,
+  // 避免内联值覆盖类导致事件卡永久透明、只看得见选项的 bug)。
   useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-    card.style.opacity = '0';
-    card.style.transform = 'translateX(-20px)';
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     return () => cancelAnimationFrame(raf);
   }, [event.id]);

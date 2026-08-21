@@ -26,8 +26,8 @@
   border-radius: 0 6px 6px 0;
 }
 
-/* 事件卡入场 */
-.event-card { opacity: 1; }
+/* 事件卡入场:默认不可见,event-visible 时淡入+归位(用类而非内联 opacity,避免覆盖 bug) */
+.event-card { opacity: 0; transform: translateX(-20px); }
 .event-card.event-visible { opacity: 1; transform: translateX(0); }
 
 /* 选项选中/置灰态 */
