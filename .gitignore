@@ -33,6 +33,8 @@ build/
 data/*.db
 data/*.db-shm
 data/*.db-wal
+# 大规模 rollout 全量轨迹(~800MB,留盘不入库)
+data/rollout-traj/
 
 # Test artifacts
 coverage/

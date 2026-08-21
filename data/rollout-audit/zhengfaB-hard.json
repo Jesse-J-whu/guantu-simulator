@@ -1,0 +1,70 @@
+{
+  "combo": "zhengfaB/hard",
+  "comboId": 26,
+  "deptName": "政法委",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "distribution": [
+        { "policy": "good", "ending_type": "GREAT", "n": 125, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 3 },
+        { "policy": "bad", "ending_type": "BAD", "n": 125, "avgPromotions": 1.0, "minPromotions": 1, "maxPromotions": 1 },
+        { "policy": "mixed", "ending_type": "GREAT", "n": 125, "avgPromotions": 2.928, "minPromotions": 2, "maxPromotions": 3 },
+        { "policy": "random", "ending_type": "GREAT", "n": 82, "avgPromotions": 2.341, "minPromotions": 2, "maxPromotions": 3 },
+        { "policy": "random", "ending_type": "GOOD", "n": 33, "avgPromotions": 2.0, "minPromotions": 2, "maxPromotions": 2 },
+        { "policy": "random", "ending_type": "MID", "n": 6, "avgPromotions": 2.0, "minPromotions": 2, "maxPromotions": 2 },
+        { "policy": "random", "ending_type": "BAD", "n": 4, "avgPromotions": 1.75, "minPromotions": 1, "maxPromotions": 2 }
+      ],
+      "promotionMeanByDifficultySameDept": { "easy": 4.066, "normal": 3.108, "hard": 2.286 }
+    },
+    "independentRecheck": {
+      "checked": 30,
+      "violations": 0,
+      "perPolicy": { "good": 7, "bad": 7, "random": 8, "mixed": 8 },
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "checks": ["titleSimilarity>=0.55 标题重复", "isGenericTitle 泛化标题", "similarity>=0.8 desc 重复", "similarity>=0.8 选项重复", "每选项四维 effect 非全零", "chosenIdx 越界", "continuity 非空", "step==i+1 / year==2016+i", "attrsAfter==clamp(prev+effectsApplied)", "effectsApplied==所选选项 effect", "promoted?rankAfter-rank==1:rankAfter==rank", "promotions 计数", "steps==24", "结局按 ending.ts 重算", "finalRank 与 departments.ts 阶梯比对"],
+      "extra": "另对全量 500 人/12000 步重算(不信任 DB 与在线审计器):meta/policy==playerIdx%4/steps==24/continuity 非空/属性夹取数学/职级合法性/ending.ts 阈值验算/finalRank 阶梯比对/promotions 计数全部 0 偏差;单局内 desc 全文完全重复 0;JSONL(按行内 playerIdx 字段过滤)与 DB ending_type/promotions/final_rank 交叉比对 500 人 0 不符。审计器首轮 60 条 STEP-GAP/YEAR-SKIP 标志系审计脚本自身 0-based 初始化错误(数据为 step 1..24/year 2016..2039),修正后 0 违规,属审计方误报非数据缺陷"
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/9/18,均 step%3==0)", "结局验算": "GREAT 正确(廉洁100/均分100/rank3)", "备注": "四维后期顶格 100,夹取正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅 step9 晋升)", "结局验算": "BAD 正确(廉洁0,(100-0)*1.3=130>=75)", "备注": "step9 后廉洁跌破 35,晋升全被 INTEGRITY_GATE 拦截" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(9/15)", "结局验算": "GREAT 正确(廉洁72/均分88.25/rank2)", "备注": "random 策略下 rank2 压线满足 GREAT rank>=2" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/21)", "结局验算": "GREAT 正确(廉洁93/均分94.75/rank3)", "备注": "" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/9/18)", "结局验算": "GREAT 正确(廉洁100/均分99.25/rank3)", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅 step9)", "结局验算": "BAD 正确(廉洁0)", "备注": "廉洁归零后负效果持续夹取在 0" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(9/15)", "结局验算": "GREAT 正确(廉洁89/均分89/rank2)", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/18)", "结局验算": "GREAT 正确(廉洁100/均分100/rank3)", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/15/24)", "结局验算": "GREAT 正确(廉洁94/均分97.5/rank3)", "备注": "最后一次晋升落在 step24,节奏合理" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/21)", "结局验算": "GREAT 正确(廉洁100/均分100/rank3)", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/9/18)", "结局验算": "GREAT 正确(廉洁100/均分100/rank3)", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅 step9)", "结局验算": "BAD 正确(廉洁0)", "备注": "step10 廉洁恰为 35 时仍允许晋升,跌破后拦截,与 INTEGRITY_GATE=35(>=35 放行)一致" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/9/18)", "结局验算": "GREAT 正确(廉洁100/均分99.25/rank3)", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(仅 step9)", "结局验算": "BAD 正确(廉洁0,step22 归零)", "备注": "politics/network 仍 100,廉洁单独归零,BAD 判定只看廉洁与难度系数,正确" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/21)", "结局验算": "GREAT 正确(廉洁81/均分91.25/rank3)", "备注": "step18/23/24 选 D 类风险选项致廉洁回落,仍守住 >=70" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/18)", "结局验算": "GREAT 正确(廉洁100/均分99.25/rank3)", "备注": "step24 四维 100/100/100/99+{5,4,-3,6} 夹取后 {100,100,97,100},clamp 验证" }
+  ],
+  "observations": [
+    "500 人共用完全相同的 24 场景序列(标题、正文、顺序逐字相同)与同一开场白——mock 管线确定性抽取(server/mockLLM.js SCENE_BANK 30 景按 step 轮转),按口径说明跨玩家重复属预期、非六大诉求违例;但场景顺序未按 seed 洗牌值得记录",
+    "选项文案为 CHOICE_BANK 四槽位通用文本(A 稳妥正面/B 程序保守/C 关系运作/D 消极风险),部分选项与场景正文语义不贴(如「老科长退休托付」下出现「如实上报数据口径」);effect 绑定场景+槽位语义,未发现语义反转,属已记录的 mock 设计而非违规;四条 hint(稳妥但费工/程序优先/经营关系/省事但有代价)每步原样重复,提示信息量低",
+    "衔接语为统一模板「承接「上一步标题」的余波,事情还没完」,每步非空且引用的上一步标题真实存在(全量 500 人扫描 0 缺失);语义最弱处在主题大跳跃处(如 step14 会议室的座次牌 → step15 扶贫村的第一周)",
+    "结局完全由策略决定:good 125 人全 GREAT(均 3 晋升)、bad 125 人全 BAD(廉洁均归零,(100-0)*1.3=130>=75;均仅 step9 晋升一次,之后被 INTEGRITY_GATE=35 拦截)、mixed 125 人全 GREAT(2-3 晋升);random 分化为 GREAT82/GOOD33/MID6/BAD4;hard 晋升均值 2.286 < normal 3.108 < easy 4.066,难度梯度与 promotion.ts 设计一致",
+    "effectsApplied 记录所选选项的原始 effect 而非夹取后增量,顶格 100/触底 0 时数值不变;审计器首轮 60 条 STEP-GAP/YEAR-SKIP 为审计脚本 0-based 初始化错误(step 实为 1..24、year 2016..2039),修正后 0 违规,已甄别为审计方误报"
+  ],
+  "verdict": "PASS",
+  "summary": "combo26 政法委/hard 500 玩家全部完成、六大诉求 SQL 计数全 0;30 人 tsx 独立重算(dedup.ts 阈值)0 违规,全量 500 人/12000 步不信任式重算(属性夹取数学/职级合法性/ending.ts 阈值/finalRank 阶梯/晋升计数)0 偏差,JSONL 与 DB 交叉比对 0 不符;16 人 24 步逐字深读全部通过。0 真实违规,PASS。"
+}

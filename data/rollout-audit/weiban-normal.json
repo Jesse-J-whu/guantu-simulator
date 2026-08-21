@@ -1,0 +1,69 @@
+{
+  "combo": "weiban/normal",
+  "comboId": 1,
+  "deptName": "委办(党委办公室)",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*), SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=1",
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "track_failures": 0,
+      "stepsTable": { "rows": 12000, "continuity_ok": 12000, "attr_nonzero": 12000, "rank_fixes": 0, "promoted_steps": 1702 },
+      "uniqueness": { "distinct_seeds": 500, "distinct_session_ids": 500, "distinct_ips": 500 },
+      "duration_ms": { "min": 6218, "avg": 6822, "max": 8598 },
+      "distribution": [
+        { "policy": "good", "ending": "GREAT", "n": 125, "avgPromotions": 5.0, "min": 5, "max": 5 },
+        { "policy": "bad", "ending": "BAD", "n": 125, "avgPromotions": 1.168, "min": 1, "max": 2 },
+        { "policy": "mixed", "ending": "GREAT", "n": 123, "avgPromotions": 4.0, "min": 3, "max": 5 },
+        { "policy": "mixed", "ending": "GOOD", "n": 2, "avgPromotions": 3.0, "min": 3, "max": 3 },
+        { "policy": "random", "ending": "GREAT", "n": 85, "avgPromotions": 3.671, "min": 3, "max": 4 },
+        { "policy": "random", "ending": "GOOD", "n": 27, "avgPromotions": 3.037, "min": 3, "max": 4 },
+        { "policy": "random", "ending": "MID", "n": 13, "avgPromotions": 3.0, "min": 3, "max": 3 }
+      ],
+      "distributionVerdict": "good全部GREAT(5次晋升), bad全部BAD(1-2次晋升,廉洁度归零触发落马), mixed/random介于两者之间 — 策略-结局梯度正确。normal难度无MID2/BAD于random(随机策略廉洁度最低34,风险=(100-34)×1.0=66<75),合理。难度梯度符合promotion.ts: weiban晋升均值 easy 4.118 > normal 3.404 > hard 2.336。"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始JSONL按playerIdx字段取人独立重算(不依赖DB): 标题重复(bigram Jaccard≥0.55)、通用标题、desc重复(≥0.8)、选项跨步+步内重复(≥0.8)、属性数学clamp(prev+effect)、effectsApplied==所选选项effect、每选项≥1项非零、职级仅promoted时+1且在阶梯范围内、完整晋升重放(gainPromotionPoints+promotionCost×部门系数0.88+廉洁度门槛35+3步年评)、结局按ending.ts重算比对、policy==playerIdx%4映射、bgOk",
+      "sampleIdx": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "checked": 30,
+      "violations": 0,
+      "bonusFullRecompute": { "players": 500, "violations": 0, "note": "脚本实跑全量500人重放重算,同样0违例" },
+      "maxSimilaritiesInSample": { "title": 0.182, "desc": 0.404, "choice": 0.5 },
+      "dbVsJsonlCrossCheck": "500人全字段比对0处不一致(ending/finalRank/promotions/steps/rank/attrs)"
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 5, "promoSteps": [3, 6, 12, 18, 24], "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(终值100/100/100/100,含100顶格夹取)", "职级": "通过(rank5=阶梯顶副厅级)", "结局验算": "GREAT判定正确(廉洁100/均分100/rank5)", "最弱一步": "step 2 continuity为固定句式「承接「急件连夜核改报送」的余波,事情还没完」—引用真实但模板化", "备注": "全程选A/B稳妥项,24步无任何标题/正文/选项雷同" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "promoSteps": [6], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁80→0@step17,此后0处再减按夹取不变)", "职级": "通过(rank1)", "结局验算": "BAD判定正确(风险=(100-0)×1.0=100≥75)", "最弱一步": "step 18起廉洁度持续0,bad策略每步选C经营关系项,损耗曲线一致但剧情desc未呼应廉洁崩溃", "备注": "廉洁度<35门槛后所有年评晋升被正确拦截,仅1次晋升" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(终值88/97/69/91)", "职级": "通过(rank3=副处级)", "结局验算": "GREAT判定正确(廉洁91/均分86.25/rank3)", "最弱一步": "step 14座次牌场景A选项「引入审计专项核查」与剧情(摆座次牌)不贴合 — mock罐头选项复用所致,非机械违规", "备注": "随机策略选项分布A/B/C/D均出现,符合random" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "promoSteps": [3, 6, 12, 21], "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(终值100/99/100/94)", "职级": "通过(rank4=正处级)", "结局验算": "GREAT判定正确(廉洁94/均分98.25/rank4)", "最弱一步": "step 23果篮信封场景B选项「先试点再推开」与请托场景错位(mock选项库换洗),标题-正文本身一致", "备注": "mixed策略A-D混合出现,晋升节奏3步年评驱动为主" },
+    { "playerIdx": 100, "policy": "good", "promotions": 5, "promoSteps": [3, 6, 12, 18, 24], "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(终值100/100/97/100)", "职级": "通过(rank5)", "结局验算": "GREAT判定正确(廉洁100/均分99.25/rank5)", "最弱一步": "各步desc为独立罐头场景,desc之间无因果承接(衔接仅靠continuity一行)", "备注": "与p0同为good全GREAT路径但effect向量逐seed不同(77010100)" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "promoSteps": [6], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(终值100/52/100/0)", "职级": "通过(rank1)", "结局验算": "BAD判定正确(风险=100≥75)", "最弱一步": "同p1: 廉洁归零后desc剧情仍在推进日常政务,未触发剧情性停顿(引擎无此要求)", "备注": "bad策略全程选C,evalText「廉洁度只剩0分」与数据吻合" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "promoSteps": [6, 9, 15, 24], "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(终值93/100/91/100)", "职级": "通过(rank4)", "结局验算": "GREAT判定正确(廉洁100/均分96/rank4)", "最弱一步": "continuity句式全24步同一模板「承接「X」的余波,事情还没完」,信息量低但引用标题均真实存在", "备注": "random含多次D(省事但有代价)选择仍达成GREAT,属性余量充足" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "promoSteps": [6, 9, 15, 21], "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(终值100/100/90/100)", "职级": "通过(rank4)", "结局验算": "GREAT判定正确(廉洁100/均分97.5/rank4)", "最弱一步": "step 11饭局座次A选项「组织座谈听取意见」与私人饭局语境错位(mock选项)", "备注": "mixed路径晋升步与p102不同(21 vs 24),重放一致" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "promoSteps": [6, 12, 21], "endingType": "MID", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(终值79/37/100/46)", "职级": "通过(rank3)", "结局验算": "MID判定正确(风险54<75非BAD;廉洁46<50够不到GOOD;46≥35→MID) — 全局仅有的13个MID之一,手算确认分档无误", "最弱一步": "execute长期37偏低但无任何desc/结局文本提及能力短板(评语仅按结局类型生成)", "备注": "random策略里结局最弱的一档,梯度中间值存在,非二值分化" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 5, "promoSteps": [3, 6, 12, 18, 24], "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(终值100/100/100/100)", "职级": "通过(rank5)", "结局验算": "GREAT判定正确(廉洁100/均分100/rank5)", "最弱一步": "满晋升路径步3即升副科级(仅2步攒够11点×0.88成本),前期偏快但与promotion.ts点数公式重放一致", "备注": "mixed也能达阶梯顶,设计上以属性/廉洁门槛而非策略硬限制" },
+    { "playerIdx": 252, "policy": "good", "promotions": 5, "promoSteps": [3, 6, 12, 18, 24], "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(终值100/100/100/100)", "职级": "通过(rank5)", "结局验算": "GREAT判定正确(廉洁100/均分100/rank5)", "最弱一步": "与p251终态完全同数值但effect序列不同(seed 77010252),属预期(mock场景相同、数值随seed)", "备注": "good策略125人全部恰好5次晋升封顶,分布聚拢(见分布核查,策略设计使然)" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "promoSteps": [6], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(终值100/52/100/0)", "职级": "通过(rank1)", "结局验算": "BAD判定正确(风险=100≥75)", "最弱一步": "step 6后连续18步无晋升,evalText「蹉跎多年」与数据吻合", "备注": "bad125人仅1-2次晋升(max=2的个例为早期攒点后廉洁崩)", "备注2": "廉洁度门槛35拦截逻辑经晋升重放逐人验证" },
+    { "playerIdx": 448, "policy": "good", "promotions": 5, "promoSteps": [3, 6, 12, 18, 24], "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过(终值100/100/97/100)", "职级": "通过(rank5)", "结局验算": "GREAT判定正确(廉洁100/均分99.25/rank5)", "最弱一步": "step 1 continuity「这是你入职后的第一件事」为开局专用句,其余23步均为承接句式 — 开局豁免符合规则", "备注": "尾部段玩家与头部段(p0)结构一致,无按ip/seed段的系统性差异" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "promoSteps": [6], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁80→step18余2→step19起夹0;终值100/59/100/0)", "职级": "通过(rank1)", "结局验算": "BAD判定正确(风险=(100-0)×1.0=100≥75)", "最弱一步": "step 17廉洁6→step 18选C(-4)→2→step 19(-3)→0: 夹取边界逐笔核对无误", "备注": "evalText「仅有1次晋升,蹿跎多年,但级别越高摔得越重」与promotions=1吻合" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "promoSteps": [3, 9, 15, 24], "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(终值87/92/86/94,含network两次100顶格再减)", "职级": "通过(rank4)", "结局验算": "GREAT判定正确(廉洁94/均分89.75/rank4)", "最弱一步": "step 7选D「拖到风头过去再说」后step 8又选B程序优先 — random策略动机跳跃大,但策略定义即如此", "备注": "promotions步含非年评步3/15(选择驱动+年评双通道),与gameEngine顺序重放一致" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "promoSteps": [6, 9, 15, 24], "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过(终值99/95/95/94,含廉洁两次100顶格)", "职级": "通过(rank4)", "结局验算": "GREAT判定正确(廉洁94/均分95.75/rank4)", "最弱一步": "step 9晋升机遇场景选D「避重就轻写总结」仍当年升职(rank1→2) — 晋升由点数/门槛决定,不强制与tag呼应,设计如此", "备注": "mixed路径含C/D劣选仍保GREAT,廉洁余量(多次回满)是主因" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500完成,SQL全量六项违规SUM全0;独立npx tsx重算30人样本0违例(脚本实跑全量500人重放同样0违例);16名玩家×24步逐字深读全部通过(衔接24/24、无局内重复、属性数学含夹取逐笔核对、职级仅promoted时+1且终值对阶梯、结局阈值手工验算含唯一MID个案p250分档正确)。策略-结局梯度正确(good全GREAT/bad全BAD/mixed-random居中),难度梯度easy 4.118>normal 3.404>hard 2.336符合promotion.ts。发现的质量备注(非违规):continuity为「承接「X」的余波」固定句式、desc之间缺因果承接、个别选项文案与场景错位(如座次牌场景配「引入审计专项核查」)— 均为mock LLM罐头库局限,跨玩家重复按口径说明不计违规。"
+}

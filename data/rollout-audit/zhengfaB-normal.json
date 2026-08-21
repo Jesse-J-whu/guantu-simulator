@@ -1,0 +1,57 @@
+{
+  "combo": "zhengfaB/normal",
+  "comboId": 25,
+  "deptName": "政法委",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "stepsDone": "min=24 max=24, steps表 12000 行=500x24",
+      "meetsRequirements": 500,
+      "bgOk": 500,
+      "sums": {
+        "continuity_missing": 0,
+        "title_dup": 0,
+        "choice_dup": 0,
+        "desc_dup": 0,
+        "generic_titles": 0,
+        "attr_zero_offered": 0,
+        "attr_not_applied": 0,
+        "rank_residual": 0,
+        "illegal_rank_change": 0,
+        "llm_errors": 0,
+        "track_failures": 0
+      },
+      "policyXending": {
+        "good":   { "GREAT": 125, "GOOD": 0, "MID": 0, "MID2": 0, "BAD": 0, "avgPromotions": 4.0 },
+        "bad":    { "GREAT": 0, "GOOD": 0, "MID": 0, "MID2": 0, "BAD": 125, "avgPromotions": 1.152 },
+        "random": { "GREAT": 91, "GOOD": 28, "MID": 3, "MID2": 2, "BAD": 1, "avgPromotions": 3.44 },
+        "mixed":  { "GREAT": 124, "GOOD": 1, "MID": 0, "MID2": 0, "BAD": 0, "avgPromotions": 3.984 }
+      }
+    },
+    "independentRecheck": { "checked": 30, "violations": 0, "note": "npx tsx 直接读 JSONL 按行内 playerIdx 取样(idx 0-7/120-127/360-367/490-495, good7/bad7/random8/mixed8),独立重算标题重复(bigram>=0.55)/选项重复(>=0.8)/generic 标题/clamp 属性数学/职级跳变,与 DB 全部一致" }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0,   "policy": "good",   "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.3/rank4>=2)", "最弱一步": "step 3 标题「验收现场的购物卡」而 desc 写「厚信封+饭局邀约」,同一收买场景但标题道具未在正文出现,属措辞层面", "备注": "全程选清廉/担当支线,廉洁锁 100,4 次晋升节奏顺畅" },
+    { "playerIdx": 1,   "policy": "bad",    "promotions": 2, "endingType": "BAD",   "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×1.0=100>=75)", "最弱一步": "step 3 同上(标题购物卡 vs 正文厚信封)", "备注": "廉洁单调衰降到 0;晋升 2 次后多步被廉洁门槛(<35)暂缓,结局与轨迹一致" },
+    { "playerIdx": 2,   "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁73/均分91.0/rank3>=2)", "最弱一步": "step 3 同上", "备注": "chosenIdx 散布 0-3,与 random 策略相符;廉洁 73 仍过 GREAT 门槛" },
+    { "playerIdx": 3,   "policy": "mixed",  "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "前半有妥协选项(step13 收下购物卡)后回归清廉,四维全满" },
+    { "playerIdx": 100, "policy": "good",   "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4>=2)", "最弱一步": "step 3 同上(全服共用 24 幕同一场景序列)", "备注": "四维 100/100/100/100,evalText 数字与 attrsAfter 完全一致" },
+    { "playerIdx": 101, "policy": "bad",    "promotions": 1, "endingType": "BAD",   "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×1.0=100>=75)", "最弱一步": "step 3 同上", "备注": "24 步仅 1 次晋升:廉洁门 35 卡死后续提拔,BAD 佐证" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁98/均分93.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "random 抽到偏清廉线也能满晋升,分布合理" },
+    { "playerIdx": 103, "policy": "mixed",  "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分98.5/rank4>=2)", "最弱一步": "step 3 同上", "备注": "execute 77→100 的爬升与选项效果完全对账" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁73/均分82.0/rank3>=2)", "最弱一步": "step 3 同上", "备注": "中段玩家与首段玩家共用同一 24 幕序列(mock 预期口径)" },
+    { "playerIdx": 251, "policy": "mixed",  "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "24 标题/24 正文互不雷同,选项文案跨步无重复(肉眼复核)" },
+    { "playerIdx": 252, "policy": "good",   "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "rankAfter 仅在 promoted=true 步 +1,4 次全对" },
+    { "playerIdx": 253, "policy": "bad",    "promotions": 2, "endingType": "BAD",   "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×1.0=100>=75)", "最弱一步": "step 3 同上", "备注": "bad 策略 125 人全部 BAD,与该玩家亲手验算一致" },
+    { "playerIdx": 448, "policy": "good",   "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "尾段玩家同样全绿;continuity 引号内文字与上一步标题 100% 精确一致" },
+    { "playerIdx": 449, "policy": "bad",    "promotions": 1, "endingType": "BAD",   "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×1.0=100>=75)", "最弱一步": "step 3 同上", "备注": "politics/network 满值但廉洁归零仍判 BAD,优先级符合 ending.ts" },
+    { "playerIdx": 498, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁71/均分88.5/rank3>=2)", "最弱一步": "step 3 同上", "备注": "廉洁 71 踩线过 GREAT 门槛,验算无误" },
+    { "playerIdx": 499, "policy": "mixed",  "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁81/均分95.0/rank4>=2)", "最弱一步": "step 3 同上", "备注": "全 500 人 continuity 引用上一步标题共 11500/11500 次精确匹配,0 错位" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 玩家全部完成且六大诉求 0 违例(SQL 11 项违规和全 0,12000 步 continuity_ok/attr 全绿);30 人独立重算 0 违规;16 人×24 步逐字深读 0 真实违例。最值得说的发现:全服共用同一套 24 幕 mock 场景序列(预期口径,非跨人违例),衔接引语与上一步标题 11500/11500 精确一致;唯一弱点是 step 3 标题「购物卡」与正文「厚信封」的措辞错位(同一收买场景,不构成规则违例);bad 策略 125 人廉洁单调归零全部 BAD,good 策略恒为 4 次晋升 GREAT 正处级,策略-结局分布合理。"
+}

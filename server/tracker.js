@@ -88,9 +88,20 @@ function createTracker(db) {
     return { ok: true };
   }
 
+  // /api/stats 结果的 TTL 缓存。stats() 要对 visits/sessions 做多组聚合,
+  // 访问量到几十万行后单次现算 >1s,且 node:sqlite 同步执行会阻塞事件循环;
+  // 管理页与监控高频轮询时,冷聚合会把同一 worker 上的玩家请求长尾一起拖垮
+  // (压测 p99 从毫秒级恶化到秒级)。统计面板容忍秒级陈旧 —— generatedAt
+  // 如实标注生成时间 —— 默认缓存 10s;STATS_TTL_MS 可调,设 0 关闭。
+  let statsCache = null;
+  const STATS_TTL_MS = Math.max(0, Number(process.env.STATS_TTL_MS ?? 10_000));
+
   /** 聚合统计。 */
   function stats() {
     const now = Date.now();
+    if (statsCache && now - statsCache.at < STATS_TTL_MS) {
+      return statsCache.data;
+    }
     const dayAgo = now - DAY_MS;
     const hourAgo = now - 60 * 60 * 1000;
 
@@ -149,7 +160,7 @@ function createTracker(db) {
     const endedCount = sessionAgg.ended || 0;
     const windowMinutes = Math.max(1, (now - (rps.firstTs || now)) / 60000);
 
-    return {
+    const data = {
       generatedAt: new Date(now).toISOString(),
       visits: {
         total: visitTotals.total || 0,
@@ -182,6 +193,8 @@ function createTracker(db) {
         recent: recentSessions,
       },
     };
+    statsCache = { at: now, data };
+    return data;
   }
 
   return { trackStart, trackChoice, trackEnd, stats };

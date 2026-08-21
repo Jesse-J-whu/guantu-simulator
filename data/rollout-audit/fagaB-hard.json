@@ -1,0 +1,81 @@
+{
+  "combo": "fagaB/hard",
+  "comboId": 14,
+  "deptName": "发改委",
+  "difficulty": "hard",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=14",
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "stepsTable": { "rows": 12000, "playersWithStepsNot24": 0, "continuityOk0": 0, "attrNonzero0": 0, "rankFixes>0": 0, "promotedSteps": 1139 }
+    },
+    "distribution": {
+      "byPolicyEnding": [
+        { "policy": "good", "endingType": "GREAT", "n": 125, "avgPromotions": 3.0 },
+        { "policy": "bad", "endingType": "BAD", "n": 125, "avgPromotions": 1.0 },
+        { "policy": "mixed", "endingType": "GREAT", "n": 124, "avgPromotions": 2.95 },
+        { "policy": "mixed", "endingType": "GOOD", "n": 1, "avgPromotions": 2.0 },
+        { "policy": "random", "endingType": "GREAT", "n": 81, "avgPromotions": 2.27 },
+        { "policy": "random", "endingType": "GOOD", "n": 35, "avgPromotions": 2.0 },
+        { "policy": "random", "endingType": "MID", "n": 5, "avgPromotions": 2.0 },
+        { "policy": "random", "endingType": "BAD", "n": 4, "avgPromotions": 1.75 }
+      ],
+      "finalRanks": { "副处级": 265, "正科级": 109, "副科级": 126 },
+      "promotionsPerPlayer": { "3": 265, "2": 109, "1": 126 },
+      "difficultyGradient": { "fagaB-easy(combo12)": 4.042, "fagaB-normal(combo13)": 3.098, "fagaB-hard(combo14)": 2.278, "note": "hard < normal < easy，与 promotion.ts DIFFICULTY_FACTOR hard=1.3 成本 / 0.8 得分一致" }
+    },
+    "independentRecheck": {
+      "templateScript": { "checked": 30, "violations": 0, "sample": "idx 0-7,120-127,360-367,490-495，按行内 playerIdx 字段过滤" },
+      "full500Recompute": {
+        "checked": 500,
+        "violations": 0,
+        "checks": [
+          "policy == ['good','bad','random','mixed'][playerIdx%4]：500/500",
+          "24 步且 step=1..24、year=2016..2039 连续：500/500",
+          "标题 bigram>=0.55 重复：0；泛化套话标题：0",
+          "desc 相似度>=0.8 重复：0；选项跨步/步内相似度>=0.8 重复：0",
+          "192000 张选项卡全零效果：0；effectsApplied==所选卡 effect：0 偏差",
+          "属性 clamp(prev+effect, 0..100) 数学：0 错；越界属性：0",
+          "职级仅在 promoted=true 时 +1：0 违例；promotions 字段与步计数：0 偏差",
+          "finalRank == departments.ts 阶梯(科员/副科级/正科级/副处级/正处级/副厅级)[rank]：0 偏差",
+          "endingType 按 ending.ts 阈值(hard 系数 1.3)重算：500/500 吻合",
+          "continuity 引用上一步标题：0 错引；全部晋升落在考核步(step%3==0)：1139/1139"
+        ]
+      }
+    }
+  },
+  "violations": [],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(15步起四维顶100夹取)", "职级": "通过(6/9/18步晋升,均考核步)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3,risk=0)", "最弱一步": "step 13 防汛值守第一夜:衔接语仅模板引用「检查组明天到」,desc 与检查组剧情无实际承接", "备注": "full-text 逐字读" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁19步起钉0)", "职级": "通过(9步晋升后廉洁<35被暂缓提拔)", "结局验算": "BAD 判定正确(廉洁0→risk130≥75)", "最弱一步": "step 13 防汛值守第一夜(同上模板衔接)", "备注": "full-text 逐字读" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "endingType": "GOOD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(9/18步晋升)", "结局验算": "GOOD 判定正确(廉洁62<70非GREAT,≥50且均分70.8≥45,risk49.4<75)", "最弱一步": "step 13(模板衔接)", "备注": "full-text 逐字读" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/21步晋升)", "结局验算": "GREAT 判定正确(廉洁93/均分99.2/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "full-text 逐字读" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(13步起顶100)", "职级": "通过(6/9/18)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致(程序校验)" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁21步起钉0,负值夹取正确)", "职级": "通过(9)", "结局验算": "BAD 判定正确(廉洁0→risk130)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "endingType": "GOOD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(9/18)", "结局验算": "GOOD 判定正确(廉洁62<70、均分70.8、risk49.4)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/12/21)", "结局验算": "GREAT 判定正确(廉洁100/均分99.2/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 250, "policy": "random", "promotions": 2, "endingType": "GREAT", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/15)", "结局验算": "GREAT 判定正确(廉洁93≥70、均分87≥60、rank2≥2)", "最弱一步": "step 13(模板衔接)", "备注": "rank2 的 GREAT 变体,阶梯核对通过" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(6/15/24,第24步压线晋升)", "结局验算": "GREAT 判定正确(廉洁100/均分99.8/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(14步起顶100)", "职级": "通过(6/9/18)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁20步起钉0)", "职级": "通过(9)", "结局验算": "BAD 判定正确(廉洁0→risk130)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(12步起顶100)", "职级": "通过(6/9/18)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过(廉洁18步起钉0)", "职级": "通过(9)", "结局验算": "BAD 判定正确(廉洁0→risk130)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "endingType": "MID", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(9/18)", "结局验算": "MID 判定正确(廉洁49<50非GOOD、≥35、risk66.3<75非BAD,手算吻合)", "最弱一步": "step 13(模板衔接)", "备注": "全组合仅5例 MID 之一" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过(19步起顶100)", "职级": "通过(6/12/21)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank3)", "最弱一步": "step 13(模板衔接)", "备注": "文案与语料逐字节一致" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成且六大诉求 0 违例：SQL 全零、模板 30 人抽样重算 0 违例、加做全 500 人独立重算(含 ending.ts 结局重算/阶梯核对)0 偏差、16 人逐字深读全通过。发现 3 项 mock 口径内的观察(全批共用同一条 24 场景序列、衔接语为固定模板仅引用标题无实际剧情承接、MID2 在 hard 难度数学上不可达)，均非违规。"
+}

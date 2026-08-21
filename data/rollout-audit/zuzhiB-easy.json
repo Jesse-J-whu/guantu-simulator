@@ -1,0 +1,94 @@
+{
+  "combo": "zuzhiB/easy",
+  "comboId": 6,
+  "deptName": "组织部",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "dataSources": [
+    "data/rollout.db (players/steps, combo_id=6; DB 无 audits 表,模板提及但实际不存在)",
+    "data/rollout-traj/zuzhiB-easy.jsonl (500 行,行号==playerIdx 已核验,但全部取样仍按行内 playerIdx 字段过滤)",
+    "src/engine/ending.ts / promotion.ts / departments.ts / dedup.ts / server/mockLLM.js"
+  ],
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meets_requirements": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "track_failures": 0,
+      "steps_table": { "rows": 12000, "distinct_players": 500, "step_range": "1-24", "continuity_ok_sum": 12000, "rank_fixes": 0, "choice_count_min_max": "4-4", "attr_nonzero_min": 1 },
+      "policy_mapping_mismatch_vs_idx_mod4": 0,
+      "bg_ok_false": 0,
+      "distribution": {
+        "by_policy_ending": [
+          { "policy": "good", "ending_type": "GREAT", "n": 125, "avg_promotions": 6.0, "min": 6, "max": 6 },
+          { "policy": "bad", "ending_type": "BAD", "n": 125, "avg_promotions": 2.13, "min": 2, "max": 3 },
+          { "policy": "mixed", "ending_type": "GREAT", "n": 124, "avg_promotions": 5.06, "min": 4, "max": 6 },
+          { "policy": "mixed", "ending_type": "GOOD", "n": 1, "avg_promotions": 4.0, "min": 4, "max": 4 },
+          { "policy": "random", "ending_type": "GREAT", "n": 79, "avg_promotions": 4.57, "min": 4, "max": 5 },
+          { "policy": "random", "ending_type": "GOOD", "n": 34, "avg_promotions": 4.06, "min": 4, "max": 5 },
+          { "policy": "random", "ending_type": "MID", "n": 12, "avg_promotions": 3.92, "min": 3, "max": 4 }
+        ],
+        "difficulty_promotion_means_zuzhiB": { "easy": { "good": 6.0, "bad": 2.13, "mixed": 5.05, "random": 4.37 }, "normal": { "good": 5.0, "bad": 1.17, "mixed": 3.98, "random": 3.41 }, "hard": { "good": 3.0, "bad": 1.0, "mixed": 2.97, "random": 2.42 }, "direction_ok": "easy>normal>hard 全部策略成立,符合 promotion.ts DIFFICULTY_FACTOR 与组织部晋升5星(deptFactor=0.88)" }
+      }
+    },
+    "independentRecheck": {
+      "method": "npx tsx 直接 import src/engine/dedup.ts 的 titleSimilarity/similarity/isGenericTitle,从原始 JSONL 按 playerIdx 字段取样 30 人(0-7,120-127,360-367,490-495),重算标题重复(≥0.55)/选项重复(≥0.8)/正文重复(≥0.8)/泛化标题/属性 clamp 数学/职级跳变",
+      "checked": 30,
+      "violations": 0
+    },
+    "fullRecheck500": {
+      "method": "python 从原始 JSONL 独立重算全部 500 人(不依赖 DB):每步 continuity/desc 非空、标题/正文/选项文本一局内无全等、每选项≥1项非零效果、effectsApplied==所选选项 effect、clamp(prev+effect)==attrsAfter、rank 仅 promoted 时+1、promotions 总数==promoted 步数、按 ending.ts 阈值(easy diffFactor=0.8)亲手重判结局、finalRank 对照 departments.ts 阶梯",
+      "checked": 500,
+      "violations": 0
+    }
+  },
+  "violations": [],
+  "observations_nonViolations": [
+    {
+      "kind": "mock确定性",
+      "detail": "全部 500 人拿到完全相同的 24 个场景单元且顺序一致(全批仅 24 个不同标题、1 种单元序列;title/desc/continuity/tagLabel 与 player 0 逐字节相同)。根因是 server/mockLLM.js 按 (step-1)%30 取景、刻意不做种子偏移(文件头注明:哈希偏移会破坏一局内唯一性保证)。跨玩家雷同属模板口径中明确豁免的 mock 罐装预期,一局内 24 单元互不重复,诉求满足。"
+    },
+    {
+      "kind": "衔接模板化(衔接最弱证据)",
+      "detail": "第 2-24 步衔接语全部为同一模板「承接「上一步标题」的余波,事情还没完。」,所引标题均真实存在、无捏造人名(较早期版本已修复);但 desc 本身是独立场景单元,与上一步剧情无实质承接。例:player 0 step 13「防汛值守第一夜」承接「检查组明天到」,正文是完全新的防汛场景;player 2 step 21「招标现场的质疑」承接「年度考核的谈话」同理。这是罐装场景库的结构性限制,真实 GLM 的剧情衔接已在 docs/diversity-report.md 单独验证(衔接字段覆盖 100%、NPC 名册复用 94.2%)。"
+    },
+    {
+      "kind": "选项提示词固定",
+      "detail": "每步 4 个选项的 hint 固定为「稳妥但费工/程序优先/经营关系/省事但有代价」(全批仅 4 种 hint,与策略槽位语义绑定,server/mockLLM.js 设计如此)。hint 不在标题/正文/选项文本三层审计口径内,选项 text 本身一局内无重复;但玩家每步看到同样的四条提示语,真实 GLM 下不会如此。"
+    },
+    {
+      "kind": "数值高度集中",
+      "detail": "结局按策略几乎完全确定:good 125/125 全 GREAT 且全部恰好 6 次晋升(触顶正厅级,7 级阶梯封顶);bad 125/125 全 BAD(廉洁度全部归 0,easy 落马线 (100-int)*0.8≥75 即 int≤6)。random/mixed 有 GREAT/GOOD/MID 分层。属 mock 确定性 + 槽位效果语义绑定的必然结果,与诉求5/6 的方向性要求一致;promotion.ts 注释期望优秀玩家 4-5 次晋升,easy+组织部(晋升5星)下 good 玩家全员触顶 6 次,属轻微调参观察而非违例。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(顶格 rank6=正厅级)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank6;风险0<75)", "最弱一步": "step 13 防汛值守第一夜:衔接语引「检查组明天到」但正文为全新防汛场景,无剧情承接", "备注": "全场属性后期顶 100,加值被 clamp 吞属正常" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank2)", "结局验算": "BAD 判定正确((100-0)*0.8=80≥75)", "最弱一步": "step 13 同上(场景库结构性限制)", "备注": "廉洁 step17 归 0 后持续扣减为 0(clamp);step10 起廉洁<35 触发暂缓提拔,晋升止步" },
+    { "playerIdx": 2, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank4)", "结局验算": "GOOD 判定正确(廉洁68≥50/均分75.75≥45;GREAT 差廉洁 2 分未达)", "最弱一步": "step 21 招标现场的质疑:承接「年度考核的谈话」但为全新场景", "备注": "evalText「平均属性 76 分」与 round(75.75) 一致" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank5)", "结局验算": "GREAT 判定正确(廉洁96/均分98.25/rank5)", "最弱一步": "step 13 同上", "备注": "mixed 策略在 a/b 槽位间轮换,中途偶选 d 槽" },
+    { "playerIdx": 100, "policy": "good", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank6)", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank6)", "最弱一步": "step 13 同上", "备注": "s24 net-3 使人脉 100→97,clamp 数学正确" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank2)", "结局验算": "BAD 判定正确((100-0)*0.8=80≥75)", "最弱一步": "step 13 同上", "备注": "全程固定选 c 槽(关系运作),轨迹单调属策略使然" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "MID", "finalRank": "正处级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank4)", "结局验算": "MID 判定正确(廉洁29<35 但 rankRatio 4/6≈0.67≥0.5 走 MID 分支;非平凡分支验算通过)", "最弱一步": "step 13 同上", "备注": "结局四分支中最少见的分支,亲手验算无误" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank6)", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank6)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank4)", "结局验算": "GOOD 判定正确(廉洁54≥50/均分58.5≥45)", "最弱一步": "step 15 扶贫村的第一周:前一步连续选 d 槽下跌后突然晋升+全新场景", "备注": "evalText「平均属性 59 分」=Math.round(58.5),正确" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank5)", "结局验算": "GREAT 判定正确(廉洁89/均分97.25/rank5)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank6)", "结局验算": "GREAT 判定正确(廉洁100/均分99.25/rank6)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank2)", "结局验算": "BAD 判定正确((100-0)*0.8=80≥75)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank6)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank6)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank2)", "结局验算": "BAD 判定正确((100-0)*0.8=80≥75)", "最弱一步": "step 13 同上", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank4)", "结局验算": "GREAT 判定正确(廉洁87≥70/均分87.25≥60/rank4≥2)", "最弱一步": "step 13 同上", "备注": "中段连续 d 槽下探后回暖,random 轨迹有波动的正面样本" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 6, "endingType": "GREAT", "finalRank": "正厅级", "衔接": "24/24 非空(模板化)", "属性数学": "通过", "职级": "通过(rank6)", "结局验算": "GREAT 判定正确(廉洁98/均分99.25/rank6)", "最弱一步": "step 13 同上", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500 完成且六大诉求零违例:SQL 十项合规 SUM 全 0;tsx 独立重算 30 人 0 违例;python 全量 500 人独立重算(属性 clamp/职级/结局阈值/阶梯)0 违例;16 人×24 步逐字深读全部通过(含 MID 的 rankRatio 非平凡分支验算)。唯一值得说的是衔接语与场景均为 mock 罐装模板(500 人同一 24 单元序列、衔接语同一句式),属模板口径豁免的预期行为,真实多样性另见 docs/diversity-report.md。"
+}

@@ -1,0 +1,96 @@
+{
+  "combo": "jiwei/easy",
+  "comboId": 9,
+  "deptName": "纪委(纪律检查委员会)",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed), SUM(meets_requirements), SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=9",
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "bg_ok": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "track_failures": 0,
+      "violation_rows": [],
+      "stepsTable": { "rows": 12000, "rankFixesSum": 0, "promotionsTotal": 2062, "nonReviewPromotions": 0 },
+      "distribution": {
+        "bad/BAD": 125, "good/GREAT": 125, "mixed/GREAT": 124, "mixed/GOOD": 1,
+        "random/GREAT": 79, "random/GOOD": 31, "random/MID": 15
+      },
+      "promoByPolicy": {
+        "good": { "avg": 5.0, "min": 5, "max": 5 },
+        "bad": { "avg": 2.19, "min": 2, "max": 3 },
+        "random": { "avg": 4.36, "min": 3, "max": 5 },
+        "mixed": { "avg": 4.94, "min": 4, "max": 5 }
+      },
+      "difficultyComparison": "同部门晋升均值 easy > normal > hard(如 bad 2.19/1.18/1.00、mixed 4.94/3.99/2.96),符合 promotion.ts 难度系数"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算(不信任 DB):标题 bigram≥0.55 / 选项相似度≥0.8(跨步+步内) / 正文相似度≥0.8 / 属性 clamp(prev+effect) / 所选效果=effectsApplied / 职级 promoted=>+1 / finalRank 对照 departments.ts 阶梯 / 结局按 ending.ts 阈值独立验算 / policy=idx%4",
+      "checked": 30,
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "violations": 0,
+      "maxSimilarities": { "title": 0.18, "choice": 0.5, "desc": 0.4 },
+      "fullRecheckAll500": { "checked": 500, "violations": 0, "endingRecomputeMismatches": 0, "finalRankMismatches": 0, "policyMismatches": 0 }
+    }
+  },
+  "violations": [],
+  "observations": [
+    {
+      "kind": "narrative-identical-across-players",
+      "severity": "info(口径已豁免)",
+      "detail": "500 名玩家的 24 个标题/正文/选项文案序列逐字节相同(distinct title/desc/choice 序列均=1),全部玩家共用同一 24 个罐装场景单元、同一顺序、同一开场白;玩家间差异仅来自效果数值抖动(±1~2)与策略选择。口径说明已声明 mock LLM 跨玩家相同属预期、真实 GLM 多样性另见 docs/diversity-report.md,故不计违规,但 30 单元池实际只用到固定 24 个、顺序也不随机。"
+    },
+    {
+      "kind": "continuity-template",
+      "severity": "minor-quality",
+      "detail": "全部 11,500 个非首步的衔接语均为同一固定模板「承接「上一步标题」的余波,事情还没完。」(首步均为「这是你入职后的第一件事。」)。衔接非空且所引上一步标题真实存在,机械口径通过;但 desc 本身是自包含场景,与上一步剧情无实质承接。"
+    },
+    {
+      "kind": "choice-desc-semantic-fit",
+      "severity": "minor-quality",
+      "detail": "每步 4 个选项固定走「稳妥但费工/程序优先/经营关系/省事但有代价」四个原型槽(12,000 步全同),选项文案为纪检通用动作池,与当步 desc 场景只是松散匹配(如 step14「会议室的座次牌」配「引入审计专项核查」、step6「老科长退休托付」配「如实上报数据口径」),部分组合读起来答非所问。"
+    },
+    {
+      "kind": "outcome-determinism",
+      "severity": "info",
+      "detail": "策略完全决定结局:good 125/125 全 GREAT 且恰好 5 次晋升到顶(副厅级),bad 125/125 全 BAD(廉洁全归零),无个体差异;random/mixed 有分档变化。与口径要求的方向一致,但离散度极小。"
+    },
+    {
+      "kind": "ending-text-tone",
+      "severity": "cosmetic",
+      "detail": "MID 结局配文可能自相矛盾:player 498「调任闲职,颐养天年」却写「4次晋升,平步青云」——ending.ts 的 promotionText(≥4 次→平步青云)与 MID 档文案组合欠妥。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24(全为固定模板语)", "属性数学": "通过", "职级": "通过(S3/6/9/12/18 晋升至顶 rank5)", "结局验算": "GREAT 判定正确(廉洁100/均分99/rank5)", "最弱一步": "step6 老科长退休托付:与上一步信访围堵仅靠模板语衔接,desc 无实质承接", "备注": "evalText 数字 100/100/97/100 与终态一致" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁 S20 触底 0 后多次夹取不变)", "职级": "通过(S9 后廉洁<35 被 INTEGRITY_GATE 暂缓提拔,卡 rank2)", "结局验算": "BAD 判定正确(廉洁0→风险(100-0)×0.8=80≥75)", "最弱一步": "step6 同上", "备注": "bad 策略=argmax(p+e+n-1.5i),选槽与脚本公式一致" },
+    { "playerIdx": 2, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/18)", "结局验算": "GOOD 判定正确(廉洁57<70 不入 GREAT,≥50 且均分82≥45)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/9/12/15/24)", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank5)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 100, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank5)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(廉洁门禁卡 rank2)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GOOD", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GOOD 判定正确(廉洁60/均分75)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁93/均分90/rank5)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S6/9/12/15)", "结局验算": "GREAT 判定正确(廉洁73≥70/均分84/rank4)", "最弱一步": "step6 同上(本轮 24 步中该步衔接最弱)", "备注": "前期连续 4 个差选项后翻盘,轨迹合理" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/9/12/18)", "结局验算": "GREAT 判定正确(廉洁93/均分98/rank5)", "最弱一步": "step6 同上", "备注": "S20 起偶发坏选项,廉洁 100→93" },
+    { "playerIdx": 252, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99/rank5)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过(廉洁 1→0→…夹取正确,S18 +4 回升至13再下滑)", "职级": "通过(廉洁门禁卡 rank2)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank5)", "最弱一步": "step6 同上", "备注": "" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 3, "endingType": "BAD", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12,廉洁跌破 35 后不再晋升)", "结局验算": "BAD 判定正确(廉洁0/风险80)", "最弱一步": "step6 同上", "备注": "bad 玩家因效果抖动在 S5/S7 选中表面尚可的选项,与 argmax(p+e+n-1.5i) 公式完全一致,非策略错配" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "endingType": "MID", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/9/12/18)", "结局验算": "MID 判定正确(廉洁40<50 不入 GOOD,≥35 → MID)", "最弱一步": "step6 同上", "备注": "结局文案「4次晋升,平步青云」与「调任闲职」语气冲突(见 observations)" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 5, "endingType": "GREAT", "finalRank": "副厅级", "衔接": "24/24", "属性数学": "通过", "职级": "通过(S3/6/12/15/24)", "结局验算": "GREAT 判定正确(廉洁77/均分94/rank5)", "最弱一步": "step6 同上", "备注": "evalText 100/98/100/77 与终态一致" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 名玩家全量 SQL 核验与 30 人抽样(实际另做全 500 人)独立重算均 0 违规,16 人×24 步逐字深读通过;六大诉求全部满足。需产品侧知晓:mock 叙事流在 500 人间逐字节相同、衔接语为单一固定模板、选项四槽原型固定且与场景仅松散匹配,good/bad 策略结局零方差(good 全 5 晋 GREAT、bad 全 BAD)。"
+}

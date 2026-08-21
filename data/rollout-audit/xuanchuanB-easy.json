@@ -1,0 +1,74 @@
+{
+  "combo": "xuanchuanB/easy",
+  "comboId": 18,
+  "deptName": "宣传部",
+  "difficulty": "easy",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "query": "SELECT COUNT(*) players, SUM(completed) completed, SUM(meets_requirements) meets, SUM(continuity_missing), SUM(title_dup), SUM(choice_dup), SUM(desc_dup), SUM(generic_titles), SUM(attr_zero_offered), SUM(attr_not_applied), SUM(rank_residual), SUM(illegal_rank_change), SUM(llm_errors) FROM players WHERE combo_id=18",
+      "players": 500,
+      "completed": 500,
+      "meets": 500,
+      "continuity_missing": 0,
+      "title_dup": 0,
+      "choice_dup": 0,
+      "desc_dup": 0,
+      "generic_titles": 0,
+      "attr_zero_offered": 0,
+      "attr_not_applied": 0,
+      "rank_residual": 0,
+      "illegal_rank_change": 0,
+      "llm_errors": 0,
+      "distribution": [
+        { "policy": "good", "endingType": "GREAT", "n": 125, "avgPromotions": 4.0, "minPromotions": 4, "maxPromotions": 4 },
+        { "policy": "bad", "endingType": "BAD", "n": 125, "avgPromotions": 2.008, "minPromotions": 2, "maxPromotions": 3 },
+        { "policy": "mixed", "endingType": "GREAT", "n": 125, "avgPromotions": 4.0, "minPromotions": 4, "maxPromotions": 4 },
+        { "policy": "random", "endingType": "GREAT", "n": 88, "avgPromotions": 4.0, "minPromotions": 4, "maxPromotions": 4 },
+        { "policy": "random", "endingType": "GOOD", "n": 31, "avgPromotions": 4.0, "minPromotions": 4, "maxPromotions": 4 },
+        { "policy": "random", "endingType": "MID", "n": 6, "avgPromotions": 3.0, "minPromotions": 3, "maxPromotions": 4 }
+      ],
+      "distributionVerdict": "合理:bad 125人全部BAD(廉洁度归0,(100-0)×0.8=80≥75),晋升2-3次(廉洁<35后按promotion.ts INTEGRITY_GATE暂缓提拔);good/mixed 全部GREAT 4次晋升;random 分散于 GREAT88/GOOD31/MID6,符合设计预期"
+    },
+    "independentRecheck": {
+      "method": "npx tsx 独立脚本从原始 JSONL 重算,按行内 playerIdx 字段取样(30人: idx 0-7,120-127,360-367,490-495,每策略≥7人),用 src/engine/dedup.ts 的 titleSimilarity/similarity/isGenericTitle 重查标题bigram≥0.55、选项/正文相似度≥0.8、属性clamp(prev+effect)、职级跳变、policy==idx%4、steps.length==24",
+      "checked": 30,
+      "violations": 0
+    }
+  },
+  "violations": [],
+  "observations": [
+    {
+      "kind": "hint-layer-repetition (非违规,mock口径未覆盖层)",
+      "detail": "每步4个选项的 hint 固定为「稳妥但费工/程序优先/经营关系/省事但有代价」4个标签,一局24步内重复24次。选项文本与正文desc均无局内重复(dedup三层0违例),hint标签层不在度量口径内,但真实LLM下也建议纳入多样性检查"
+    },
+    {
+      "kind": "declarative-continuity (非违规)",
+      "detail": "衔接语为罐装模板「承接「上一步标题」的余波,事情还没完。」(第1步为「这是你入职后的第一件事。」)。所引上一步标题真实存在且顺序正确,但desc本身每步开启全新场景,剧情承接是声明式的而非情节延续;最弱一步见深读记录 step 4"
+    },
+    {
+      "kind": "mixed-policy-skew (非违规)",
+      "detail": "mixed 策略实际多选 0/1 号(稳妥/程序)选项,偶选3号(如P499 step1),125人全部GREAT,与good无法区分;random 策略有88/125也达GREAT,easy难度下结局天花板偏松"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 4, "steps": [3, 6, 9, 12], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 100, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过(科员→正处级,与departments.ts阶梯一致)", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4)", "最弱一步": "step 4 「两位领导方案之争」承接「验收现场的购物卡」,衔接语声明式,desc为全新场景", "备注": "全程选0/1号稳妥选项,晋升踩点3/6/9/12" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 2, "steps": [6, 9], "endingType": "BAD", "finalRank": "正科级", "finalAttrs": { "politics": 100, "execute": 60, "network": 100, "integrity": 0 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过(止步正科级)", "结局验算": "BAD 判定正确((100-0)×0.8=80≥75)", "最弱一步": "step 19 起廉洁度触0后仍按-6继续扣但夹取为0,剧情上已无可坠落空间", "备注": "廉洁度约step10跌破35后晋升被INTEGRITY_GATE暂缓,晋升停在2次,与promotion.ts一致" },
+    { "playerIdx": 2, "policy": "random", "promotions": 4, "steps": [3, 6, 12, 21], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 86, "execute": 85, "network": 65, "integrity": 74 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁74/均分77.5/rank4)", "最弱一步": "step 4 同上声明式衔接", "备注": "随机策略晋升节奏3/6/12/21,step9考核点未达标未升,合理" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "steps": [3, 6, 12, 15], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 94, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分98.5/rank4)", "最弱一步": "step 4 同上", "备注": "mixed 实际偏选0/1号,结局与good无异" },
+    { "playerIdx": 100, "policy": "good", "promotions": 4, "steps": [3, 6, 9, 12], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 100, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4)", "最弱一步": "step 4 同上", "备注": "与P0同为good罐装序列,跨玩家重复属mock预期口径" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "steps": [6, 9], "endingType": "BAD", "finalRank": "正科级", "finalAttrs": { "politics": 100, "execute": 52, "network": 100, "integrity": 0 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×0.8=80≥75)", "最弱一步": "step 19 廉洁触0后继续显示负效应但值不变(夹取正常)", "备注": "bad全选2号「经营关系」类,politics/network满百、integrity归0,属性模型表现符合设计" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "steps": [3, 6, 12, 21], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 78, "execute": 69, "network": 80, "integrity": 71 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁71/均分74.5/rank4,压线但阈值判定无误)", "最弱一步": "step 4 同上", "备注": "结局验算的边缘案例,亲手复核阈值顺序(BAD→GREAT→GOOD→MID)确认无错档" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "steps": [3, 6, 9, 15], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 100, "integrity": 94 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分98.5/rank4)", "最弱一步": "step 4 同上", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 4, "steps": [6, 9, 12, 21], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 99, "network": 95, "integrity": 99 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁99/均分98.2/rank4)", "最弱一步": "step 2 step考核点未升(step3才首升),节奏合理", "备注": "开局廉洁一度71(step2)后回升至99,随机性体现充分" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 4, "steps": [3, 6, 9, 15], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 92, "execute": 97, "network": 100, "integrity": 94 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分95.8/rank4)", "最弱一步": "step 4 同上", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 4, "steps": [3, 6, 9, 12], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 100, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4)", "最弱一步": "step 4 同上", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 2, "steps": [6, 9], "endingType": "BAD", "finalRank": "正科级", "finalAttrs": { "politics": 100, "execute": 60, "network": 100, "integrity": 0 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×0.8=80≥75)", "最弱一步": "step 10 廉洁35尚在gate线上,step11起30<35晋升冻结,分界清晰", "备注": "step18廉洁触0,此后负效应被夹取,数值不变属口径正常" },
+    { "playerIdx": 448, "policy": "good", "promotions": 4, "steps": [3, 6, 9, 12], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 97, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.2/rank4)", "最弱一步": "step 4 同上", "备注": "step24选0号(廉洁+6/network-3)收尾,network 97未满百,效果真实反映" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "steps": [6, 9], "endingType": "BAD", "finalRank": "正科级", "finalAttrs": { "politics": 100, "execute": 59, "network": 100, "integrity": 0 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确((100-0)×0.8=80≥75)", "最弱一步": "step 20 廉洁触0,其后step21-24四处负廉洁效应全部夹取为0", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "steps": [3, 6, 12, 18], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 96, "execute": 100, "network": 100, "integrity": 77 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁77/均分93.2/rank4)", "最弱一步": "step 4 同上;另 step20选3号/step21选3号连续劣选致廉洁76→70逼近阈值", "备注": "random真实混选(2/3号占比明显高于good),结局仍GREAT,印证easy下GREAT偏易" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "steps": [3, 6, 9, 15], "endingType": "GREAT", "finalRank": "正处级", "finalAttrs": { "politics": 100, "execute": 100, "network": 100, "integrity": 100 }, "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100.0/rank4)", "最弱一步": "step 1 mixed选3号「先放一放明天再说」(省事但有代价),开局即劣选但无碍结局", "备注": "证明mixed偶发劣选,但整体仍偏0/1号" }
+  ],
+  "verdict": "PASS",
+  "summary": "500/500完成、SQL全量13项违规SUM全0;独立重算30人0违例;16人×24步逐字深读全部通过(衔接24/24、属性数学、职级阶梯、结局验算均正确)。0真实违规,verdict PASS。备忘观察(非违规):hint层4个固定标签局内每步重复且不在现有去重口径内;衔接语为声明式罐装模板(所引标题真实但desc剧情不延续,最弱为step4「两位领导方案之争」承接「验收现场的购物卡」);easy下mixed/random亦大量GREAT,结局天花板偏松。"
+}

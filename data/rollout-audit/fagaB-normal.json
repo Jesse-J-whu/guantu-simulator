@@ -1,0 +1,77 @@
+{
+  "combo": "fagaB/normal",
+  "comboId": 13,
+  "deptName": "发改委",
+  "difficulty": "normal",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500,
+      "completed": 500,
+      "meetsRequirements": 500,
+      "continuityMissing": 0,
+      "titleDup": 0,
+      "choiceDup": 0,
+      "descDup": 0,
+      "genericTitles": 0,
+      "attrZeroOffered": 0,
+      "attrNotApplied": 0,
+      "rankResidual": 0,
+      "illegalRankChange": 0,
+      "llmErrors": 0,
+      "distribution": [
+        { "policy": "good", "endingType": "GREAT", "n": 125, "avgPromotions": 4.01, "min": 4, "max": 5 },
+        { "policy": "bad", "endingType": "BAD", "n": 125, "avgPromotions": 1.18, "min": 1, "max": 2 },
+        { "policy": "mixed", "endingType": "GREAT", "n": 124, "avgPromotions": 3.94, "min": 3, "max": 4 },
+        { "policy": "mixed", "endingType": "GOOD", "n": 1, "avgPromotions": 3, "min": 3, "max": 3 },
+        { "policy": "random", "endingType": "GREAT", "n": 80, "avgPromotions": 3.4, "min": 3, "max": 4 },
+        { "policy": "random", "endingType": "GOOD", "n": 37, "avgPromotions": 3.03, "min": 3, "max": 4 },
+        { "policy": "random", "endingType": "MID", "n": 8, "avgPromotions": 3, "min": 3, "max": 3 }
+      ],
+      "crossDifficultyAvgPromotions": { "easy": 4.04, "normal": 3.1, "hard": 2.28 },
+      "jsonlSanity": { "lines": 500, "distinctPlayerIdx": 500, "lineNePlayerIdx": 0, "policyMismatchVsMod4": 0 }
+    },
+    "independentRecheck": {
+      "method": "npx tsx 从原始 JSONL 按 playerIdx 字段取样重算: 标题重复(titleSimilarity>=0.55)/通用标题/正文重复(similarity>=0.8)/选项重复(similarity>=0.8)/属性数学 clamp(prev+effect)/职级跳变(promoted=>+1)",
+      "sample": [0, 1, 2, 3, 4, 5, 6, 7, 120, 121, 122, 123, 124, 125, 126, 127, 360, 361, 362, 363, 364, 365, 366, 367, 490, 491, 492, 493, 494, 495],
+      "checked": 30,
+      "violations": 0,
+      "policyCoverage": { "good": 7, "bad": 7, "random": 8, "mixed": 8 }
+    }
+  },
+  "violations": [],
+  "qualityObservations": [
+    {
+      "kind": "衔接语模板化",
+      "detail": "所有玩家第2-24步 continuity 均为同一句式『承接「上一步标题」的余波,事情还没完。』,所引标题100%真实存在(16人384步机械核验+全量 continuity_missing=0),但 desc 本身是自足的新场景,不实际延续上一步剧情。这是 mock LLM 罐头场景单元的固有产物(口径说明已声明),不算六诉求违例,但接真实 GLM 后应要求衔接语场景化。最弱一步示例: playerIdx 0 step13「防汛值守第一夜」自称承接「检查组明天到」余波,正文对检查组/台账只字未提。"
+    },
+    {
+      "kind": "人设漂移",
+      "detail": "同一局内同名人物身份不一致: 王建国在 S1/S7/S13 是同事/领导形象(催进度、退材料、水库电话吼),在 S21 却是『投标商』; 刘志强在 S4/S9/S18 是分管副局长,在 S24 变成『纪检组长』。全部16人皆然(mock 30场景单元共用配角名所致),建议真实 LLM 接入后按局锁定人物表。"
+    },
+    {
+      "kind": "选项贴合度",
+      "detail": "标题与正文主题一致(同属一个场景单元),但选项文案按四原型(稳妥但费工/程序优先/经营关系/省事但有代价)从通用池生成,个别场景贴合松散,如 S9「空缺的副科长职位」的选项『先停职检查再定性/建议列入下期议程』是纪检/议程动作,与晋升竞争场景几乎无关。一局之内无重复(机械+肉眼均核),仅贴题性偏弱。"
+    }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4, 阶梯[科员,副科级,正科级,副处级,正处级,副厅级]核对一致)", "最弱一步": "step 13 防汛值守第一夜: 自称承接「检查组明天到」余波但正文完全另起炉灶", "备注": "晋升步S3/S6/S12/S18 与 promotions=4 一致; 属性顶100后加值不变属正常夹取" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0, 风险=(100-0)×1.0=100≥75)", "最弱一步": "step 15 扶贫村的第一周: 承接「会议室的座次牌」余波, 座次牌剧情无任何延续", "备注": "bad 策略几乎总选经营关系卡, 廉洁一路扣到0后 clamp 在0, -i 生效但数值不变属正常" },
+    { "playerIdx": 2, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁97/均分88.3/rank3≥2)", "最弱一步": "step 9 空缺的副科长职位: 承接「网络舆情半夜爆了」, 舆情事件只字未提", "备注": "random 在 S13 选中『收下购物卡』(-5廉洁) 后又回升, 结局仍 GREAT 合理" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁98/均分99/rank4)", "最弱一步": "step 12 检查组明天到: 承接「饭局座次玄机」, 饭局无后续关联", "备注": "mixed 好坏选项交替, S5/S7/S9/S14 选了负面卡, 廉洁最低降到83 后回升" },
+    { "playerIdx": 100, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step 15 扶贫村的第一周: 承接「会议室的座次牌」余波无实际延续", "备注": "S14 起四维属性全顶100, 后续加值 clamp 不变, 数学仍逐帧吻合" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0, 风险100≥75)", "最弱一步": "step 14 会议室的座次牌: 与防汛值守无剧情承接", "备注": "S5 偶选了正面卡(公开流程接受监督), bad 策略仍以经营关系为主, 轨迹合理" },
+    { "playerIdx": 102, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁97/均分97.8/rank4)", "最弱一步": "step 16 接待工作的细节: 承接「扶贫村的第一周」, 扶贫剧情被丢弃", "备注": "S3 选了『把责任推给前任』(-5廉洁) 后面转好, 演变自然" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分100/rank4)", "最弱一步": "step 13 防汛值守第一夜: 承接「检查组明天到」无实际关联", "备注": "S12 廉洁回满100, S13 选家宴款待(-3)后回升, 夹取正确" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁74/均分82.5/rank3)", "最弱一步": "step 10 审批窗口的老同学: 「空缺的副科长职位」剧情无延续", "备注": "本组最险的 GREAT: 廉洁74 刚过70线, S24 还选了负面卡(-7廉洁), 若再低4分将降档 GOOD" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁93/均分94.8/rank4)", "最弱一步": "step 16 接待工作的细节: 扶贫村剧情无延续", "备注": "S15/S18/S19/S24 选负面卡, 廉洁一度94, 收在93, 阈值判定干净" },
+    { "playerIdx": 252, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.3/rank4)", "最弱一步": "step 15 扶贫村的第一周: 承接「会议室的座次牌」无实际关联", "备注": "S24 选『婉拒说情按规上报』(-3人脉), 人脉收97, 未顶满, 数据自然" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0, 风险100≥75)", "最弱一步": "step 13 防汛值守第一夜: 承接「检查组明天到」无实际关联", "备注": "S7 bad 策略选了程序优先正卡, S21 起廉洁2→0 clamp, 演变连贯" },
+    { "playerIdx": 448, "policy": "good", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99.3/rank4)", "最弱一步": "step 15 扶贫村的第一周: 座次牌剧情无延续", "备注": "与 p0/p100 同为 good 满分路径但选项效果值不同(逐玩家随机化), 非复制粘贴" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 2, "endingType": "BAD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "BAD 判定正确(廉洁0, 风险100≥75)", "最弱一步": "step 14 会议室的座次牌: 防汛剧情无延续", "备注": "S18 廉洁6→2, S19 起扣到0 clamp, 晋升步 S6/S12 与 promotions=2 一致" },
+    { "playerIdx": 498, "policy": "random", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁94/均分95.3/rank4)", "最弱一步": "step 16 接待工作的细节: 扶贫剧情无延续", "备注": "S4/S8/S12 random 选负面卡(照抄材料/悄悄改口径/透题), 廉洁最低85, 结局合理" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 4, "endingType": "GREAT", "finalRank": "正处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "GREAT 判定正确(廉洁100/均分99/rank4)", "最弱一步": "step 16 接待工作的细节: 扶贫剧情无延续", "备注": "S13『收下购物卡』后 S14 立即转正卡回升, mixed 的摇摆特征真实" }
+  ],
+  "verdict": "PASS",
+  "summary": "500人全量SQL核验零违例(完成500/达标500/十项违规列全0), 30人独立重算30/0, 16人384步逐字深读全部通过(衔接引用真实、局内标题/正文/选项零重复、属性数学与职级阶梯吻合、16个结局手工验算全对, 晋升梯度easy4.04>normal3.10>hard2.28符合promotion.ts设计); 仅有3条mock固有质量问题(衔接语模板化、同名人物身份漂移如刘志强副局长↔纪检组长、选项贴合度松散), 不构成六诉求违例。"
+}
