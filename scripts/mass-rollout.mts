@@ -324,11 +324,15 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
       const idx = pickChoice(policy, event.choices, rng, bias);
       const result = applyChoice(next, idx);
       next = result.state;
-      // 诉求3:非零效果必须真实改变属性。
+      // 诉求3:非零效果必须真实改变属性。属性夹取在 0..100:
+      // 已顶在边界的效果(+x 时已 100 / -x 时已 0)改变不了属性属正常,
+      // 只有"本可改变却没变"才算违例。
       const chosen = event.choices[idx];
-      const nonzero = chosen.effect.politics !== 0 || chosen.effect.execute !== 0
-        || chosen.effect.network !== 0 || chosen.effect.integrity !== 0;
-      if (nonzero && JSON.stringify(attrsBefore) === JSON.stringify(next.attrs)) r.attrNotApplied++;
+      const shouldChange = (['politics', 'execute', 'network', 'integrity'] as const).some(
+        (k) => chosen.effect[k] !== 0
+          && !((chosen.effect[k] > 0 && attrsBefore[k] === 100) || (chosen.effect[k] < 0 && attrsBefore[k] === 0)),
+      );
+      if (shouldChange && JSON.stringify(attrsBefore) === JSON.stringify(next.attrs)) r.attrNotApplied++;
       // 诉求4:职级变化只允许"经晋升 +1"一种形态。
       if (result.promoted) {
         r.promotions++;
