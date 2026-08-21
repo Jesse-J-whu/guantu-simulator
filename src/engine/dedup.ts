@@ -163,7 +163,10 @@ export function enforceFreshness(
   // ---------- 标题 ----------
   const titleHit = findMostSimilarTitle(event.title, usedTitles);
   if ((titleHit && titleHit.score >= TITLE_DUP_THRESHOLD) || isGenericTitle(event.title)) {
-    const firstSentence = event.desc
+    // 描述缺失占位符(parser 的兜底值)不是可摘的标题素材,否则占位符
+    // 会原样成为玩家可见标题。
+    const desc = event.desc === '（事件描述缺失）' ? '' : event.desc;
+    const firstSentence = desc
       .split(/[。！？!?\n]/)
       .map((s) => s.trim())
       .find((s) => s.length >= 6);
@@ -177,7 +180,7 @@ export function enforceFreshness(
       const boundaries = [...window.matchAll(/[，、：,;:]/g)].map((m) => m.index ?? 0);
       const cut = boundaries.filter((i) => i >= 6).pop() ?? -1;
       headline = (cut >= 0 ? window.slice(0, cut) : window)
-        .replace(/[，、：,;:。！？“”「」\s]+$/, '');
+        .replace(/[，、：,;:。！？“”「」（）()\s]+$/, '');
     }
     // 候选阶梯逐级验证:每个候选都要(a)非空非套话,(b)与全部历史标题
     // bigram 相似度 < 阈值。此前直接叠加后缀不回头验证,「·标签(第N幕)」
@@ -192,8 +195,17 @@ export function enforceFreshness(
       headline,
       `${event.tagLabel}·第${step + 1}幕`,
       `第${step + 1}幕`,
+      `第${step + 1}幕·新局`,
+      `第${step + 1}幕·转折`,
     ].filter(Boolean) as string[];
-    event.title = candidates.find(acceptable) ?? `第${step + 1}幕`;
+    // 终极兜底也过 acceptable 检查(幕数随步数唯一,只有历史里出现
+    // 逐字「第N幕」才会失败,此时后缀变体仍可区分);全部失败时取
+    // 碰撞最轻的一个,绝不无验证放行。
+    const terminals = [`第${step + 1}幕`, `第${step + 1}幕·新局`, `第${step + 1}幕·转折`];
+    event.title =
+      candidates.find(acceptable) ??
+      terminals.find(acceptable) ??
+      terminals.map((t) => ({ t, s: findMostSimilarTitle(t, usedTitles)?.score ?? 0 })).sort((a, b) => a.s - b.s)[0].t;
   }
   // ---------- 选项 ----------
   // 事件内部查重:LLM 把同一文案写进两个选项槽(格式回声的常见形态)
@@ -219,22 +231,61 @@ export function enforceFreshness(
     return;
   }
   // 退化输出:干净选项不足 2 个。保留碰撞最轻的原选项绝无出路——旧逻辑
-  // 因此逐字放行过历史重复。改为引擎合成一对互异且与池零碰撞的选项
-  // 文案顶上(效果数值沿用碰撞最轻的选项,"每个选项都有属性变化"不破)。
+  // 因此逐字放行过历史重复。改为引擎合成选项文案,且与标题阶梯同款逐级
+  // 验池:每个候选都要(a)与历史池相似度 <0.8,(b)与本事件已选文案
+  // 相似度 <0.8 才放行——步数数字不构成字符级唯一(池里有「暂缓观察
+  // 留待」时「暂缓观察留待第6幕再议(…)」相似度 1.00,reviewer PoC)。
+  // 效果数值沿用碰撞最轻的选项,"每个选项都有属性变化"不破。
+  const poolSafe = (text: string) =>
+    (findMostSimilarChoice(text, usedChoiceTexts)?.score ?? 0) < CHOICE_DUP_THRESHOLD;
+  // 风味词(选项提示/类型标签)本身可能撞池,撞了就弃用,避免包含式碰撞
+  // 从风味词渗进合成文案。
   const flavor = (i: number) => {
-    const hint = scored[i]?.c.hint.replace(/\s+/g, '').slice(0, 8);
-    return hint || event.tagLabel;
+    const hint = (scored[i]?.c.hint || '').replace(/\s+/g, '').slice(0, 8);
+    return hint && poolSafe(hint) ? hint : event.tagLabel;
   };
   const base = (i: number) => scored[Math.min(i, scored.length - 1)].c;
-  const pair = [
-    { ...base(0), hint: '', text: `第${step + 1}幕从严处置:${flavor(0)}` },
-    { ...base(1), hint: '', text: `暂缓观察留待第${step + 1}幕再议(${flavor(1)})` },
+  const n = step + 1;
+  // 每槽 4 个候选:3 个带风味词的骨架 + 1 个无风味词保底(风味词或标签
+  // 被池污染时的出路)。骨架两两结构互异,互检天然通过。
+  const SKELETONS: ReadonlyArray<readonly string[]> = [
+    [
+      `第${n}幕从严处置:${flavor(0)}`,
+      `当场拍板严办(${flavor(0)})`,
+      `顶住压力按规矩办:${flavor(0)}`,
+      '从严办理此案,不留情面',
+    ],
+    [
+      `暂缓观察留待第${n}幕再议(${flavor(1)})`,
+      `压后细议再作决断(${flavor(1)})`,
+      `缓一缓另行专门研究(${flavor(1)})`,
+      '暂且搁置,改日专题研究',
+    ],
   ];
-  event.choices = kept.length === 1 ? [kept[0].c, pair[1]] : pair;
-  // 双保险:合成对内部再验一次(极端 hint 撞车),撞则换第三骨架。
-  if (similarity(event.choices[0].text, event.choices[1].text) >= CHOICE_DUP_THRESHOLD) {
-    event.choices[1] = { ...event.choices[1], text: `以静制动,择机再进(${event.tagLabel})` };
+  const pickedTexts: string[] = kept.map((s) => s.c.text);
+  const safe = (t: string) =>
+    poolSafe(t) && pickedTexts.every((p) => similarity(p, t) < CHOICE_DUP_THRESHOLD);
+  const slots = kept.length === 1 ? [1] : [0, 1];
+  const finalChoices: GameEvent['choices'] = kept.map((s) => s.c);
+  for (const slot of slots) {
+    const candidates = SKELETONS[slot];
+    let text = candidates.find(safe);
+    if (text === undefined) {
+      // 全部候选撞池(极端对抗):取碰撞最轻的一个,不无验证地硬放。
+      text = candidates
+        .map((t) => ({
+          t,
+          s: Math.max(
+            findMostSimilarChoice(t, usedChoiceTexts)?.score ?? 0,
+            ...pickedTexts.map((p) => similarity(p, t)),
+          ),
+        }))
+        .sort((a, b) => a.s - b.s)[0].t;
+    }
+    pickedTexts.push(text);
+    finalChoices.push({ ...base(slot), hint: '', text });
   }
+  event.choices = finalChoices;
 }
 
 /**

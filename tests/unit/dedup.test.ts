@@ -236,6 +236,72 @@ describe('enforceFreshness 最终兜底(重试用尽后绝不原样放行重复)
     expect(event.choices.map((c) => c.text)).not.toContain('将信息上报给领导，请求指示。');
   });
 
+  it('合成选项文案逐级验池:池中已有「暂缓观察留待」时,骨架候选被跳过(reviewer PoC)', () => {
+    const pool = ['暂缓观察留待', '第6幕从严处置'];
+    const event = {
+      title: '全新且具体的标题己',
+      desc: '全新描述己。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['暂缓观察留待', '暂缓观察留待']),
+    };
+    enforceFreshness(event, [], pool, 5);
+    expect(event.choices).toHaveLength(2);
+    for (const c of event.choices) {
+      expect(findMostSimilarChoice(c.text, pool)?.score ?? 0, `选项「${c.text}」与池碰撞`).toBeLessThan(0.8);
+    }
+  });
+
+  it('连续两个退化事件(同标签风味):第二个事件的合成文案与第一个的合成文案零碰撞', () => {
+    // 退化事件1:文案与既有池全等 → 引擎合成一对并入池。
+    const seedPool = ['旧文案甲', '旧文案乙'];
+    const ev1 = {
+      title: '全新且具体的标题庚',
+      desc: '全新描述庚。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['旧文案甲', '旧文案乙']),
+    };
+    enforceFreshness(ev1, [], seedPool, 0);
+    const pool = [...seedPool, ...ev1.choices.map((c) => c.text)];
+    // 退化事件2:LLM 仍只给照抄 → 再合成。同标签风味下骨架必须轮换
+    // (旧实现只靠步数数字,0.93 撞车,reviewer PoC)。
+    const ev2 = {
+      title: '全新且具体的标题辛',
+      desc: '全新描述辛。',
+      tagLabel: '日常政务',
+      choices: mkChoices([...seedPool]),
+    };
+    enforceFreshness(ev2, [], pool, 1);
+    expect(ev2.choices).toHaveLength(2);
+    for (const c of ev2.choices) {
+      expect(findMostSimilarChoice(c.text, pool)?.score ?? 0, `选项「${c.text}」与池碰撞`).toBeLessThan(0.8);
+    }
+    // 事件内两选项互不碰撞。
+    expect(similarity(ev2.choices[0].text, ev2.choices[1].text)).toBeLessThan(0.8);
+  });
+
+  it('历史里出现逐字「第1幕」→ 终极兜底仍过验证,不放行 1.00 全等标题', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '雨夜。电话。',
+      tagLabel: '日常政务',
+      choices: mkChoices(['接起电话', '按掉不理']),
+    };
+    enforceFreshness(event, ['第1幕'], [], 0);
+    expect(findMostSimilarTitle(event.title, ['第1幕'])?.score ?? 0).toBeLessThan(TITLE_DUP_THRESHOLD);
+  });
+
+  it('描述缺失占位符不会成为玩家可见标题', () => {
+    const event = {
+      title: '暗流涌动',
+      desc: '（事件描述缺失）',
+      tagLabel: '日常政务',
+      choices: mkChoices(['照抄文案丙', '照抄文案丁']),
+    };
+    enforceFreshness(event, []);
+    expect(event.title).not.toBe('（事件描述缺失）');
+    expect(event.title.length).toBeGreaterThan(0);
+  });
+
   it('事件内部槽位互抄(LLM 把同一文案写进 A/B 槽)→ 照抄槽位被剔除', () => {
     // reviewer PoC 回归:旧兜底只查跨事件池,槽内互抄会原样放行两张
     // 一模一样的选项卡。
