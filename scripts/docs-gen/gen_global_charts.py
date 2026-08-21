@@ -275,7 +275,7 @@ def g09_server_db():
     ax = axes[1]
     ns = [r['n'] for r in per_min]
     ax.plot(range(len(ns)), ns, color='#dc2626', lw=1.6)
-    ax.set_xlabel('rollout 开始后分钟数(总 33 分钟)'); ax.set_ylabel('req/min')
+    ax.set_xlabel(f'rollout 开始后分钟数(共 {len(ns)} 个分钟桶)'); ax.set_ylabel('req/min')
     peak = max(ns)
     ax.annotate(f'峰值 {peak:,} req/min', xy=(ns.index(peak), peak),
                 xytext=(ns.index(peak) - 9, peak * 0.92), fontsize=9.5,

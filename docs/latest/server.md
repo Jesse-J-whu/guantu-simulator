@@ -264,9 +264,9 @@ const lines = [
 
 ![服务器库概览](../assets/global/g09-server-db.png)
 
-上图为 19,500 玩家 rollout(2026-08-21,`LLM_MODE=mock`,8 worker)的服务器侧数据:左图各 API 请求量全部 200、0 错误——`/api/llm-proxy` 487,500 次(19,500 局 × 25 次)、`/api/track/choice` 468,000 次(19,500 局 × 24 步)、start/end 各 19,500 次;右图负载曲线,64 并发通道 33 分钟内峰值 32,285 req/min。留存量:`rollout-server.db` visits 994,501 条 / 19,501 独立 IP,sessions 19,500 started / 19,500 ended(通关率 100%)。
+上图为 19,500 玩家 rollout(2026-08-21,`LLM_MODE=mock`,8 worker)的服务器侧数据:左图各 API 请求量全部 200、0 错误——`/api/llm-proxy` 487,500 次(19,500 局 × 25 次)、`/api/track/choice` 468,000 次(19,500 局 × 24 步)、start/end 各 19,500 次;右图负载曲线,64 并发通道约 33 分钟内(34 个分钟桶)峰值 32,235 req/min。留存量:`rollout-server.db` visits 994,501 条 / 19,501 独立 IP,sessions 19,500 started / 19,500 ended(通关率 100%)。
 
-关键实测数字(出处:`docs/loadtest-report.md`、`docs/rollout-report.md`)。autocannon 四场景(8 worker + dist 静态 + mock LLM,修复 stats TTL 后终测):
+关键实测数字(出处:`docs/loadtest-report.md`、`docs/rollout-report.md`;四场景终测数字与 visits 落库 791,635 见 `data/loadtest-report.json` 与 `data/loadtest.db`)。autocannon 四场景(8 worker + dist 静态 + mock LLM,修复 stats TTL 后终测):
 
 | 场景 | 并发 | 20s 请求数 | p50 | p99 | 错误 |
 | --- | --- | --- | --- | --- | --- |
@@ -284,7 +284,7 @@ const lines = [
 | stats 冷聚合阻塞 | ~1.2s @ visits 47 万行 | 同步 SQLite 无法避免,10s TTL 摊薄 |
 | 并发闸完全放开 | p50 13ms → 877ms | 闸门保护事件循环,故 `MAX_CONCURRENT=20` |
 | 玩家写路径慢点 | `/api/track/end` 峰值 34ms,`/api/track/choice` 均值 <1ms | VisitBatchWriter 批量落库,请求不等 SQLite |
-| 压测错误 | 4 场景全 0 错误,无 worker 崩溃、无 5xx | visits 成功落库 526,793 条 |
+| 压测错误 | 4 场景全 0 错误,无 worker 崩溃、无 5xx | visits 落库:初测 526,793 / 终测 791,635 条 |
 
 ## 10. 生产部署要点
 

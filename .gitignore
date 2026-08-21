@@ -40,3 +40,4 @@ data/rollout-traj/
 coverage/
 playwright-report/
 test-results/
+__pycache__/
