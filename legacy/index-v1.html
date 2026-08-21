@@ -1,0 +1,3405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>官途模拟器 — 你的仕途，由你书写</title>
+  <meta name="description" content="AI驱动的官场沉浸式模拟器。角色扮演，步步为营，每一个选择都决定你的仕途命运。" />
+  <!-- Open Graph for sharing -->
+  <meta property="og:title" content="官途模拟器 — 你的仕途，由你书写" />
+  <meta property="og:description" content="AI驱动的官场沉浸式模拟器。角色扮演，步步为营，每一个选择都决定你的仕途命运。" />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#0a0c10" />
+  <!-- Apple / PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="官途模拟器" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== CSS Reset & Variables ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #0a0c10;
+      --bg-card: #111520;
+      --bg-card2: #161b2a;
+      --border: #1e2740;
+      --border-glow: #c9a84c;
+      --gold: #c9a84c;
+      --gold-light: #f0d080;
+      --red: #cc2a2a;
+      --red-light: #ff5555;
+      --text-primary: #e8dfc8;
+      --text-muted: #7a8099;
+      --text-dim: #4a5068;
+      --accent: #2a4a8c;
+      --accent-light: #4a7adc;
+      --green: #2a8c4a;
+      --green-light: #4adc7a;
+      --font-main: 'Noto Serif SC', 'SimSun', 'STSong', Georgia, serif;
+      --font-ui: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+      --radius: 8px;
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.6);
+      --shadow-glow: 0 0 20px rgba(201,168,76,0.15);
+      --transition: all 0.3s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ===== Background Texture ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(42,74,140,0.06) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== Layout ===== */
+    #app { position: relative; z-index: 1; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen.hidden { display: none !important; }
+
+    /* ===== Header ===== */
+    .site-header {
+      text-align: center;
+      padding: 48px 20px 32px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .site-header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .logo-badge {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+
+    .site-title {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, #a07830 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      margin-bottom: 12px;
+    }
+
+    .site-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== Section Titles ===== */
+    .section-title {
+      font-size: 1.4rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before,
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border));
+    }
+
+    .section-title::before {
+      background: linear-gradient(90deg, var(--border), transparent);
+      flex: 0 0 30px;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    /* ===== Department Selection ===== */
+    #screen-select { padding-bottom: 60px; }
+
+    .dept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .dept-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dept-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.05) 0%, transparent 100%);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .dept-card:hover {
+      border-color: var(--gold);
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-2px);
+    }
+
+    .dept-card:hover::before { opacity: 1; }
+
+    .dept-card.selected {
+      border-color: var(--gold);
+      background: var(--bg-card2);
+      box-shadow: 0 0 30px rgba(201,168,76,0.2);
+    }
+
+    .dept-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 22px;
+      height: 22px;
+      background: var(--gold);
+      color: #1a1200;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 22px;
+      text-align: center;
+    }
+
+    .dept-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .dept-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .dept-icon {
+      font-size: 1.5rem;
+      opacity: 0.8;
+    }
+
+    .dept-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      line-height: 1.6;
+      margin-bottom: 14px;
+      min-height: 52px;
+    }
+
+    .dept-ratings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .rating-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-family: var(--font-ui);
+    }
+
+    .rating-label {
+      color: var(--text-dim);
+      width: 28px;
+      flex-shrink: 0;
+    }
+
+    .rating-stars {
+      display: flex;
+      gap: 2px;
+    }
+
+    .star {
+      font-size: 11px;
+    }
+
+    .star.filled { color: var(--gold); }
+    .star.empty { color: var(--border); }
+
+    /* ===== Difficulty Selection ===== */
+    .difficulty-group {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+
+    .diff-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      font-family: var(--font-main);
+      color: var(--text-primary);
+    }
+
+    .diff-btn:hover { border-color: var(--gold); }
+
+    .diff-btn.active {
+      border-color: var(--gold);
+      background: var(--bg-card2);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .diff-btn .diff-name {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .diff-btn .diff-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+    }
+
+    /* ===== CTA Button ===== */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      margin: 32px auto 0;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #8a6520 0%, var(--gold) 50%, #8a6520 100%);
+      color: #1a1200;
+      font-family: var(--font-main);
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201,168,76,0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      padding: 10px 24px;
+      background: transparent;
+      color: var(--gold);
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(201,168,76,0.1);
+    }
+
+    /* ===== Loading Screen ===== */
+    #screen-loading {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .loading-orb {
+      width: 80px;
+      height: 80px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 1.1rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+    .loading-subtext {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+    }
+
+    /* ===== Background Story Screen ===== */
+    #screen-background {
+      padding: 48px 0;
+      justify-content: center;
+    }
+
+    .story-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      position: relative;
+      max-width: 720px;
+      margin: 0 auto;
+      box-shadow: var(--shadow-card);
+    }
+
+    .story-card::before {
+      content: '「';
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      font-size: 4rem;
+      color: var(--gold);
+      opacity: 0.15;
+      font-family: serif;
+      line-height: 1;
+    }
+
+    .story-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .story-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .story-badge.highlight {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .story-text {
+      font-size: 1rem;
+      line-height: 2;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
+
+    .skip-btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 6px 16px;
+      background: transparent;
+      border: 1px dashed var(--text-dim);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .skip-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Result Ending Colors */
+    .result-hero.ending-great { background: radial-gradient(ellipse at center, rgba(201,168,76,0.1) 0%, transparent 70%); }
+    .result-hero.ending-bad { background: radial-gradient(ellipse at center, rgba(204,42,42,0.1) 0%, transparent 70%); }
+    .result-hero.ending-mid { background: radial-gradient(ellipse at center, rgba(42,74,140,0.08) 0%, transparent 70%); }
+
+    .result-title.ending-great { background: linear-gradient(135deg, var(--gold-light), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.ending-bad { background: linear-gradient(135deg, #ff8888, var(--red-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.ending-mid { background: linear-gradient(135deg, #aab8dd, #7a8cc0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      height: 1.2em;
+      background: var(--gold);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ===== Attributes Panel ===== */
+    .attrs-panel {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 24px;
+    }
+
+    .attrs-title {
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .attrs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .attr-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .attr-label {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .attr-value-text {
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .attr-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .attr-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+
+    .attr-fill.politics { background: linear-gradient(90deg, var(--accent), var(--accent-light)); }
+    .attr-fill.execute { background: linear-gradient(90deg, #4a8c2a, #7adc4a); }
+    .attr-fill.network { background: linear-gradient(90deg, #8c4a2a, #dc7a4a); }
+    .attr-fill.integrity { background: linear-gradient(90deg, #2a7a8c, #4adcdc); }
+
+    /* ===== Game Screen ===== */
+    #screen-game {
+      padding: 32px 0 60px;
+    }
+
+    .game-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    .game-info {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      font-family: var(--font-ui);
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .info-value {
+      font-size: 0.9rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+      .game-topbar { padding: 12px 16px; }
+      .game-info { gap: 12px; }
+      .info-value { font-size: 0.82rem; }
+    }
+
+    .progress-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      width: 120px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    /* Event Node */
+    .event-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      position: relative;
+      box-shadow: var(--shadow-card);
+    }
+
+    .event-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      font-family: var(--font-ui);
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+    }
+
+    .event-tag.daily { background: rgba(42,74,140,0.3); color: var(--accent-light); border: 1px solid var(--accent); }
+    .event-tag.politics { background: rgba(204,42,42,0.2); color: var(--red-light); border: 1px solid var(--red); }
+    .event-tag.opportunity { background: rgba(42,140,74,0.2); color: var(--green-light); border: 1px solid var(--green); }
+    .event-tag.temptation { background: rgba(140,74,42,0.2); color: #dc7a4a; border: 1px solid #8c4a2a; }
+    .event-tag.crisis { background: rgba(204,42,42,0.25); color: var(--red-light); border: 1px solid var(--red); }
+    .event-tag.interpersonal { background: rgba(74,42,140,0.2); color: #9a7adc; border: 1px solid #4a2a8c; }
+
+    .event-year {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .event-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+    }
+
+    .event-desc {
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      white-space: pre-wrap;
+    }
+
+    .hint-box {
+      background: rgba(201,168,76,0.06);
+      border-left: 3px solid var(--gold);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      border-radius: 0 4px 4px 0;
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Choices */
+    .choices-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .choice-btn {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: left;
+      font-family: var(--font-main);
+      color: var(--text-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .choice-btn::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--gold);
+      transform: scaleY(0);
+      transition: transform 0.2s ease;
+    }
+
+    .choice-btn:hover {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.05);
+      padding-left: 24px;
+    }
+
+    .choice-btn:hover::before { transform: scaleY(1); }
+
+    .choice-letter {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      background: var(--border);
+      border-radius: 3px;
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-right: 10px;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .choice-btn:hover .choice-letter {
+      background: var(--gold);
+      color: #1a1200;
+    }
+
+    .choice-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .choice-hint {
+      display: block;
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ===== Result Screen ===== */
+    #screen-result {
+      padding: 48px 0 80px;
+    }
+
+    .result-hero {
+      text-align: center;
+      padding: 48px 20px;
+      position: relative;
+    }
+
+    .result-emblem {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 40px rgba(201,168,76,0.2);
+    }
+
+    .result-type {
+      font-family: var(--font-ui);
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .result-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .result-summary {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .timeline-section {
+      margin: 40px 0;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 32px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      background: linear-gradient(180deg, var(--gold), transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 16px 0 16px 20px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -26px;
+      top: 22px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 8px rgba(201,168,76,0.5);
+    }
+
+    .timeline-year {
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .timeline-event {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    .final-eval {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-top: 32px;
+    }
+
+    .eval-label {
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .eval-text {
+      font-size: 1rem;
+      line-height: 1.9;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+    }
+
+    .restart-section {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    /* ===== Promotion Celebration Overlay ===== */
+    .promo-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(10,12,16,0.92) 0%, rgba(10,12,16,0.98) 100%);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    .promo-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .promo-badge {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 3px solid var(--gold);
+      background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.03) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      margin-bottom: 24px;
+      box-shadow: 0 0 60px rgba(201,168,76,0.25), inset 0 0 40px rgba(201,168,76,0.08);
+      animation: promoGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes promoGlow {
+      0%, 100% { box-shadow: 0 0 60px rgba(201,168,76,0.25), inset 0 0 40px rgba(201,168,76,0.08); }
+      50% { box-shadow: 0 0 90px rgba(201,168,76,0.4), inset 0 0 60px rgba(201,168,76,0.12); }
+    }
+
+    .promo-title {
+      font-size: clamp(1.5rem, 5vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+      animation: promoSlideUp 0.6s ease 0.2s both;
+    }
+
+    .promo-subtitle {
+      font-family: var(--font-ui);
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      animation: promoSlideUp 0.6s ease 0.35s both;
+    }
+
+    .promo-rank-from {
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+      animation: promoSlideUp 0.6s ease 0.5s both;
+    }
+
+    .promo-rank-from .arrow { color: var(--gold); margin: 0 8px; }
+
+    .promo-continue-btn {
+      padding: 14px 48px;
+      background: linear-gradient(135deg, #8a6520 0%, var(--gold) 50%, #8a6520 100%);
+      color: #1a1200;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      animation: promoSlideUp 0.6s ease 0.65s both;
+    }
+
+    .promo-continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201,168,76,0.4);
+    }
+
+    @keyframes promoSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== API Key Input (hidden) ===== */
+    .btn-sm {
+      padding: 10px 18px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      transition: var(--transition);
+    }
+
+    .btn-sm:hover { background: var(--accent-light); }
+
+    /* Recommended tag */
+    .dept-recommended {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      background: rgba(42,140,74,0.2);
+      color: var(--green-light);
+      border: 1px solid var(--green);
+      border-radius: 10px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Collapsible API section */
+    /* How to play modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.hidden { display: none; }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 36px;
+      max-width: 560px;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 0 60px rgba(201,168,76,0.15);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--text-primary); }
+
+    .modal-title {
+      font-size: 1.2rem;
+      color: var(--gold);
+      margin-bottom: 20px;
+      letter-spacing: 0.06em;
+    }
+
+    .how-to-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+
+    .how-to-num {
+      width: 26px;
+      height: 26px;
+      background: rgba(201,168,76,0.15);
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      color: var(--gold);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .how-to-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      font-family: var(--font-ui);
+    }
+
+    /* Attr change toast */
+    .attr-change-popup {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      z-index: 100;
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      max-width: 280px;
+      box-shadow: var(--shadow-card);
+      transform: translateX(120%);
+      transition: transform 0.4s ease;
+    }
+
+    .attr-change-popup.visible { transform: translateX(0); }
+
+    .attr-change-title {
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .attr-change-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .attr-change-label { color: var(--text-muted); }
+    .attr-change-val.pos { color: var(--green-light); }
+    .attr-change-val.neg { color: var(--red-light); }
+
+    /* Share button */
+    .share-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-share {
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-share:hover { border-color: var(--gold); color: var(--gold); }
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-color: var(--green); color: var(--green-light); }
+    .toast.error { border-color: var(--red); color: var(--red-light); }
+
+    /* ===== Demo Mode Banner ===== */
+    .demo-banner {
+      background: rgba(42,74,140,0.15);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      margin: 0 0 24px;
+      font-family: var(--font-ui);
+      font-size: 0.82rem;
+      color: var(--accent-light);
+      text-align: center;
+    }
+
+    /* ===== Footer ===== */
+    .site-footer {
+      text-align: center;
+      padding: 32px 20px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    .site-footer p {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 640px) {
+      .dept-grid { grid-template-columns: 1fr; }
+      .attrs-grid { grid-template-columns: 1fr; }
+      .game-topbar { flex-direction: column; align-items: flex-start; }
+      .story-card { padding: 24px; }
+      .event-card { padding: 20px; }
+    }
+
+    /* ===== Mobile Enhancement ===== */
+    @media (max-width: 480px) {
+      /* 触控友好：放大点击区域 */
+      .choice-btn {
+        padding: 18px 16px;
+        font-size: 0.95rem;
+        -webkit-tap-highlight-color: rgba(201,168,76,0.15);
+      }
+      .choice-letter {
+        width: 26px;
+        height: 26px;
+        font-size: 0.85rem;
+      }
+      /* 顶部信息栏紧凑排列 */
+      .game-info {
+        flex-wrap: wrap;
+        gap: 8px 16px;
+      }
+      .info-item {
+        min-width: 80px;
+      }
+      /* 事件标题字号 */
+      .event-title {
+        font-size: 1.2rem;
+      }
+      /* 角色选择卡片 */
+      .dept-card {
+        padding: 16px;
+      }
+      /* 属性面板 */
+      .attr-item {
+        padding: 10px 12px;
+      }
+      /* 容器边距 */
+      .container {
+        padding: 0 12px;
+      }
+      /* 按钮 */
+      .btn-primary {
+        padding: 14px 24px;
+        font-size: 1rem;
+      }
+      /* 加载动画字号 */
+      .loading-brush-text {
+        font-size: 1rem;
+      }
+    }
+
+    /* ===== Scroll To Top ===== */
+    /* ===== Event Loading Animation ===== */
+    .event-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+    }
+    .loading-brush {
+      width: 40px; height: 40px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin-bottom: 24px;
+    }
+    .loading-brush-text {
+      font-size: 1.1rem;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      animation: pulse 1.5s ease-in-out infinite;
+      margin-bottom: 8px;
+      font-family: var(--font-main);
+    }
+    .loading-narrative {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+      min-height: 1.5em;
+      transition: opacity 0.3s;
+    }
+    .ai-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      background: rgba(201,168,76,0.12);
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.25);
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+      letter-spacing: 1px;
+      font-family: var(--font-ui);
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== SCREEN 1: DEPARTMENT SELECTION ===== -->
+  <div id="screen-select" class="screen">
+    <header class="site-header">
+      <div class="logo-badge">GUANTU SIMULATOR · 官场沉浸体验</div>
+      <h1 class="site-title">官途模拟器</h1>
+      <p class="site-subtitle">以真实案例为鉴，体验每一次抉择的重量</p>
+      <div style="font-size:0.72rem;color:#888;margin-top:4px;">v2.5 · AI事件引擎</div>
+      <div style="margin-top:16px;">
+        <button class="btn-secondary" onclick="showHowToPlay()" style="font-size:0.82rem; padding:7px 18px;">📖 玩法说明</button>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:40px; padding-bottom:40px; flex:1;">
+
+      <!-- AI事件由服务端代理，无需前端配置API Key -->
+      <div style="text-align:center; margin-bottom:32px;">
+        <h2 class="section-title">选择你的起点</h2>
+        <p class="section-subtitle">每个部门都是一条不同的命运之路，请审慎抉择</p>
+      </div>
+
+      <div class="dept-grid" id="dept-grid"></div>
+
+      <div style="margin-top:40px; text-align:center;">
+        <h2 class="section-title">选择难度</h2>
+        <p class="section-subtitle">难度影响事件触发概率与风险权重</p>
+        <div class="difficulty-group" id="diff-group">
+          <button class="diff-btn" data-diff="easy" onclick="selectDiff(this)">
+            <div class="diff-name">轻松</div>
+            <div class="diff-desc">故事向，风险低<br>适合初次体验</div>
+          </button>
+          <button class="diff-btn active" data-diff="normal" onclick="selectDiff(this)">
+            <div class="diff-name">标准</div>
+            <div class="diff-desc">官场常态<br>平衡的挑战</div>
+          </button>
+          <button class="diff-btn" data-diff="hard" onclick="selectDiff(this)">
+            <div class="diff-name">硬核</div>
+            <div class="diff-desc">高风险高回报<br>命悬一线</div>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-start" onclick="startGame()" disabled>踏入官场</button>
+    </main>
+
+    <footer class="site-footer">
+      <p>本游戏内容纯属虚构，以真实官场案例为参考背景<br>所有剧情均为文学创作，不代表现实任何机构或个人</p>
+    </footer>
+  </div>
+
+  <!-- ===== SCREEN 2: LOADING ===== -->
+  <div id="screen-loading" class="screen hidden">
+    <div class="loading-orb"></div>
+    <div class="loading-text" id="loading-text">正在生成你的官途背景…</div>
+    <div class="loading-subtext" id="loading-subtext">AI 正在构建属于你的故事</div>
+  </div>
+
+  <!-- ===== SCREEN 3: BACKGROUND STORY ===== -->
+  <div id="screen-background" class="screen hidden">
+    <div class="container">
+      <div class="story-card">
+        <div class="story-meta" id="story-meta"></div>
+        <div class="story-text" id="story-text"></div>
+        <button class="skip-btn" onclick="skipTypewriter()" id="skip-btn">跳过动画 →</button>
+      </div>
+
+      <div class="attrs-panel" style="max-width:720px; margin:24px auto 0;">
+        <div class="attrs-title">初始属性 · INITIAL ATTRIBUTES</div>
+        <div class="attrs-grid" id="attrs-grid"></div>
+      </div>
+
+      <div style="text-align:center; margin-top:32px;">
+        <button class="btn-primary" style="max-width:280px;" onclick="enterGame()">开始你的官途</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 4: GAME ===== -->
+  <div id="screen-game" class="screen hidden">
+    <div class="game-topbar">
+      <div class="game-info">
+        <div class="info-item">
+          <span class="info-label">当前职务</span>
+          <span class="info-value" id="hud-rank">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">所在部门</span>
+          <span class="info-value" id="hud-dept">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">游戏年份</span>
+          <span class="info-value" id="hud-year">—</span>
+        </div>
+      </div>
+      <div class="progress-bar-wrap">
+        <span id="hud-step">0/10</span>
+        <div class="progress-bar">
+          <div class="progress-fill" id="hud-progress" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="event-container"></div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 5: RESULT ===== -->
+  <div id="screen-result" class="screen hidden">
+    <div class="container">
+      <div class="result-hero">
+        <div class="result-emblem" id="result-emblem">🏛</div>
+        <div class="result-type" id="result-type">官途结局</div>
+        <h2 class="result-title" id="result-title">—</h2>
+        <p class="result-summary" id="result-summary"></p>
+      </div>
+
+      <div class="attrs-panel">
+        <div class="attrs-title">最终属性 · FINAL ATTRIBUTES</div>
+        <div class="attrs-grid" id="final-attrs-grid"></div>
+      </div>
+
+      <div class="timeline-section">
+        <h2 class="section-title" style="margin-bottom:24px;">官途时间线</h2>
+        <div class="timeline" id="result-timeline"></div>
+      </div>
+
+      <div class="final-eval">
+        <div class="eval-label">官途评语 · CAREER ASSESSMENT</div>
+        <div class="eval-text" id="eval-text"></div>
+      </div>
+
+      <div class="share-row">
+        <button class="btn-share" onclick="shareResult()">📤 分享我的结局</button>
+        <button class="btn-share" onclick="copyResult()">📋 复制结局文字</button>
+      </div>
+
+      <div class="restart-section">
+        <button class="btn-primary" style="display:inline-block; max-width:280px;" onclick="restartGame()">重走一次官途</button>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+      <p>本游戏内容纯属虚构，以真实官场案例为参考背景<br>所有剧情均为文学创作，不代表现实任何机构或个人</p>
+    </footer>
+  </div>
+
+</div>
+
+<!-- How To Play Modal -->
+<div class="modal-overlay hidden" id="modal-howtoplay">
+  <div class="modal-card">
+    <button class="modal-close" onclick="hideHowToPlay()">×</button>
+    <h2 class="modal-title">📖 如何游玩</h2>
+    <div class="how-to-item">
+      <div class="how-to-num">1</div>
+      <div class="how-to-text"><strong style="color:var(--text-primary);">选择部门</strong><br>从13个部门中选择你的起点。每个部门有不同的权力、风险和晋升潜力。</div>
+    </div>
+    <div class="how-to-item">
+      <div class="how-to-num">2</div>
+      <div class="how-to-text"><strong style="color:var(--text-primary);">生成背景</strong><br>AI 会为你生成专属的官途起源故事，包括学历、任职单位和初始人物设定。</div>
+    </div>
+    <div class="how-to-item">
+      <div class="how-to-num">3</div>
+      <div class="how-to-text"><strong style="color:var(--text-primary);">做出抉择</strong><br>面对一系列关键事件，每次选择都会影响你的属性（政治嗅觉、执行力、人脉、廉洁度）。表现优秀将获得晋升机会！</div>
+    </div>
+    <div class="how-to-item">
+      <div class="how-to-num">4</div>
+      <div class="how-to-text"><strong style="color:var(--text-primary);">迎接结局</strong><br>光荣退休、处分落马、调任闲职…你的每一次选择都在书写属于你的官途。</div>
+    </div>
+    <div class="how-to-item">
+      <div class="how-to-num">★</div>
+      <div class="how-to-text"><strong style="color:var(--gold);">小提示：</strong>廉洁度一旦归零，结局将急转直下。守住底线，才能走得更远。</div>
+    </div>
+    <div style="text-align:center; margin-top:24px;">
+      <button class="btn-primary" style="max-width:200px; margin:0 auto;" onclick="hideHowToPlay()">开始游玩</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attribute Change Popup -->
+<div class="attr-change-popup" id="attr-popup">
+  <div class="attr-change-title">属性变化</div>
+  <div id="attr-popup-content"></div>
+</div>
+
+<!-- Promotion Celebration Overlay -->
+<div class="promo-overlay" id="promo-overlay">
+  <div class="promo-badge" id="promo-icon">🏛</div>
+  <div class="promo-title" id="promo-title">恭喜晋升</div>
+  <div class="promo-subtitle" id="promo-subtitle"></div>
+  <div class="promo-rank-from" id="promo-rank-from"></div>
+  <button class="promo-continue-btn" onclick="dismissPromotion()">继续仕途</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================================================================
+// DATA: DEPARTMENTS
+// ===================================================================
+const DEPARTMENTS = [
+  {
+    id: 'weiban', name: '委办（党委办公室）', icon: '🏛',
+    desc: '领导的耳目喉舌，权力核心的参谋中枢，一纸批文定乾坤',
+    ratings: { power: 4, busy: 5, promotion: 4, risk: 3 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级', '副厅级'],
+    startRank: '科员',
+    recommended: true,
+    rankPositions: {
+      '科员': '综合科科员/秘书',
+      '副科级': '综合科副科长/副主任科员',
+      '正科级': '综合科科长/秘书科科长',
+      '副处级': '委办副主任',
+      '正处级': '委办主任',
+      '副厅级': '省委副秘书长'
+    },
+    rankScope: {
+      '科员': '做具体文字工作、整理文件、跑腿送件',
+      '副科级': '带小团队写材料、负责某个科室日常',
+      '正科级': '负责重要文件起草、协调科室工作',
+      '副处级': '协助主任分管某几个科室、参与领导活动安排',
+      '正处级': '统揽委办全面工作、直接服务书记',
+      '副厅级': '协调省委多部门工作、列席常委会'
+    }
+  },
+  {
+    id: 'fuban', name: '府办（政府办公室）', icon: '📋',
+    desc: '政令上传下达的枢纽，事务协调的大管家，忙而有序',
+    ratings: { power: 3, busy: 5, promotion: 3, risk: 2 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '综合科科员/文书',
+      '副科级': '综合科副科长/副主任科员',
+      '正科级': '综合科科长/秘书科科长',
+      '副处级': '府办副主任',
+      '正处级': '府办主任'
+    },
+    rankScope: {
+      '科员': '起草公文、收发文管理、会务服务',
+      '副科级': '负责某个领域材料起草、带小团队',
+      '正科级': '负责重要文稿、协调科室运作',
+      '副处级': '协助主任分管科室、参与政府重要活动',
+      '正处级': '统揽府办全面工作、服务市长/州长'
+    }
+  },
+  {
+    id: 'zuzhiB', name: '组织部', icon: '🎯',
+    desc: '干部的培育田，官帽的发放处，被称为"管官的官"',
+    ratings: { power: 5, busy: 4, promotion: 5, risk: 4 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级', '副厅级', '正厅级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '干部科科员/档案室科员',
+      '副科级': '干部科副科长/办公室副主任科员',
+      '正科级': '干部科科长/干部监督科科长',
+      '副处级': '组织部副部长',
+      '正处级': '组织部常务副部长/组织部长（县处级）',
+      '副厅级': '组织部副部长（省厅级）',
+      '正厅级': '省委组织部长（省委常委）'
+    },
+    rankScope: {
+      '科员': '整理干部档案、陪同考察、撰写考察材料',
+      '副科级': '参与干部考察、起草人事方案',
+      '正科级': '带队考察干部、负责干部任免具体工作',
+      '副处级': '参与人事方案研究、分管某个科室',
+      '正处级': '统筹全县/全市干部工作、制定人事安排方案',
+      '副厅级': '分管省直厅局干部管理、参与省级人事决策',
+      '正厅级': '统揽全省组织人事工作、向省委提出人事建议'
+    }
+  },
+  {
+    id: 'jiwei', name: '纪委（纪律检查委员会）', icon: '⚖️',
+    desc: '官场的利剑，握着查案权，谁都怕你三分，但你也如履薄冰',
+    ratings: { power: 4, busy: 4, promotion: 4, risk: 5 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级', '副厅级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '信访室科员/案件检查室科员',
+      '副科级': '信访室副主任/案件检查室副主任',
+      '正科级': '信访室主任/案件检查室主任/党风政风室主任',
+      '副处级': '纪委常委/纪委副秘书长',
+      '正处级': '纪委副书记',
+      '副厅级': '纪委书记（市委常委）'
+    },
+    rankScope: {
+      '科员': '接访信访件、整理案件材料、外出取证',
+      '副科级': '负责某个领域信访件初核、参与谈话',
+      '正科级': '主持科室工作、带队查案、组织专项检查',
+      '副处级': '参与纪委常委会决策、分管案件检查',
+      '正处级': '统筹纪律审查和党风建设工作',
+      '副厅级': '统揽全市/全省纪检监察工作、向党委提出建议'
+    }
+  },
+  {
+    id: 'fagaB', name: '发改委', icon: '📊',
+    desc: '操盘发展命脉，项目审批一支笔，权力隐而不露，实则举足轻重',
+    ratings: { power: 5, busy: 4, promotion: 4, risk: 3 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级', '副厅级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '投资科科员/综合科科员',
+      '副科级': '投资科副科长/综合科副科长',
+      '正科级': '投资科科长/综合科科长/重点项目科科长',
+      '副处级': '发改委副主任',
+      '正处级': '发改委主任（县处级）/省发改委处长',
+      '副厅级': '省发改委副主任'
+    },
+    rankScope: {
+      '科员': '起草项目材料、整理审批卷宗、数据统计',
+      '副科级': '参与项目评审、起草审批意见',
+      '正科级': '主持科室工作、审核项目申报材料、组织评审会',
+      '副处级': '分管投资/重点项目领域、参与重大决策',
+      '正处级': '统揽发改委全面工作、审批重大项目',
+      '副厅级': '分管省发改委重要处室、参与省级经济决策'
+    }
+  },
+  {
+    id: 'caizhi', name: '财政部门', icon: '💰',
+    desc: '钱袋子的看守人，谁都要来拜码头，权力藏于数字之间',
+    ratings: { power: 4, busy: 4, promotion: 3, risk: 4 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '预算科科员/国库科科员',
+      '副科级': '预算科副科长/国库科副科长',
+      '正科级': '预算科科长/国库科科长/行财科科长',
+      '副处级': '财政局副局长',
+      '正处级': '财政局局长'
+    },
+    rankScope: {
+      '科员': '编制预算表格、审核报销单据、对账',
+      '副科级': '参与预算编制、审核部门预算',
+      '正科级': '主持科室工作、编制财政预算方案',
+      '副处级': '分管某领域财政工作、参与预算分配决策',
+      '正处级': '统揽财政全面工作、掌握全市/全县财政大权'
+    }
+  },
+  {
+    id: 'xuanchuanB', name: '宣传部', icon: '📢',
+    desc: '掌控话语权，笔比刀快，是舆论战场的无形指挥官',
+    ratings: { power: 3, busy: 3, promotion: 3, risk: 4 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '新闻科科员/网信科科员/办公室科员',
+      '副科级': '新闻科副科长/网信科副科长',
+      '正科级': '新闻科科长/网信科科长/文艺科科长',
+      '副处级': '宣传部副部长',
+      '正处级': '宣传部部长（县委常委）'
+    },
+    rankScope: {
+      '科员': '写新闻稿、管理公众号、舆情监测',
+      '副科级': '组织新闻发布会、管理媒体关系',
+      '正科级': '主持科室工作、策划宣传活动、处置舆情',
+      '副处级': '分管新闻/文艺等领域、参与重大宣传决策',
+      '正处级': '统揽全市/全县宣传工作、担任县委常委'
+    }
+  },
+  {
+    id: 'tongzhan', name: '统战部', icon: '🤝',
+    desc: '编织大团结网络的幕后推手，平衡木上优雅的舞者',
+    ratings: { power: 3, busy: 3, promotion: 3, risk: 2 },
+    ranks: ['科员', '副科级', '正科级', '副处级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '党派科科员/民族宗教科科员',
+      '副科级': '党派科副科长/民族宗教科副科长',
+      '正科级': '党派科科长/民族宗教科科长/联络科科长',
+      '副处级': '统战部副部长'
+    },
+    rankScope: {
+      '科员': '联络民主党派人士、整理宗教场所台账',
+      '副科级': '参与统战活动组织、协调宗教事务',
+      '正科级': '主持科室工作、策划统战活动、管理民族事务',
+      '副处级': '分管统战业务、协调工商联和民主党派工作'
+    }
+  },
+  {
+    id: 'zhengfaB', name: '政法委', icon: '🔰',
+    desc: '稳定之剑握在手，警检法的协调者，关键时刻一锤定音',
+    ratings: { power: 4, busy: 3, promotion: 4, risk: 5 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级', '副厅级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '综治办科员/维稳办科员',
+      '副科级': '综治办副主任/维稳办副主任',
+      '正科级': '综治办主任/维稳办主任/执法监督室主任',
+      '副处级': '政法委副书记/政治部主任',
+      '正处级': '政法委书记（市委常委）',
+      '副厅级': '省政法委副书记'
+    },
+    rankScope: {
+      '科员': '整理综治材料、汇总治安数据、维稳信息报送',
+      '副科级': '负责某领域综治协调、参与维稳方案制定',
+      '正科级': '主持科室工作、协调公检法日常事务',
+      '副处级': '分管综治/维稳工作、协调重大案件',
+      '正处级': '统揽全市/全县政法工作、协调公检法',
+      '副厅级': '分管省政法委重要工作、参与省级政法决策'
+    }
+  },
+  {
+    id: 'jiaoyu', name: '教育部门', icon: '📚',
+    desc: '看似清水衙门，实则桃李满天下，隐性资源不容小觑',
+    ratings: { power: 2, busy: 4, promotion: 2, risk: 2 },
+    ranks: ['科员', '副科级', '正科级', '副处级'],
+    startRank: '科员',
+    recommended: true,
+    rankPositions: {
+      '科员': '基础教育科科员/人事科科员',
+      '副科级': '基础教育科副科长/人事科副科长',
+      '正科级': '基础教育科科长/人事科科长/计财科科长',
+      '副处级': '教育局副局长'
+    },
+    rankScope: {
+      '科员': '审核学校材料、整理教师档案、教育数据统计',
+      '副科级': '参与学校评估、协调招生工作',
+      '正科级': '主持科室工作、制定教育政策方案',
+      '副处级': '分管某领域教育工作、参与重大教育决策'
+    }
+  },
+  {
+    id: 'keji', name: '科技部门', icon: '🔬',
+    desc: '新时代的宠儿，技术官僚的升迁新赛道，未来可期',
+    ratings: { power: 3, busy: 4, promotion: 3, risk: 2 },
+    ranks: ['科员', '副科级', '正科级', '副处级', '正处级'],
+    startRank: '科员',
+    rankPositions: {
+      '科员': '高新科科员/计划科科员',
+      '副科级': '高新科副科长/计划科副科长',
+      '正科级': '高新科科长/计划科科长/成果转化科科长',
+      '副处级': '科技局副局长',
+      '正处级': '科技局局长'
+    },
+    rankScope: {
+      '科员': '整理科研材料、评审辅助工作、数据统计',
+      '副科级': '参与科技项目评审、对接科研机构',
+      '正科级': '主持科室工作、组织项目评审会',
+      '副处级': '分管科技创新/成果转化领域',
+      '正处级': '统揽全市/全县科技工作、制定科技发展战略'
+    }
+  },
+  {
+    id: 'zhengxie', name: '政协', icon: '🏅',
+    desc: '荣誉与协商的舞台，进可参政议政，退可颐养天年',
+    ratings: { power: 3, busy: 2, promotion: 2, risk: 1 },
+    ranks: ['委员', '常委', '副主席'],
+    startRank: '委员',
+    rankPositions: {
+      '委员': '政协委员（无行政级别/享受副处级待遇）',
+      '常委': '政协常委（享受正处级待遇）',
+      '副主席': '政协副主席（副厅级/正厅级）'
+    },
+    rankScope: {
+      '委员': '提交提案、参加视察、反映社情民意',
+      '常委': '参与政协常委会、审议重大事项',
+      '副主席': '分管政协专委会、参与全市重大决策协商'
+    }
+  },
+  {
+    id: 'renda', name: '人大', icon: '📜',
+    desc: '立法权的行使者，是干部晋升路上的重要转折驿站',
+    ratings: { power: 3, busy: 2, promotion: 2, risk: 1 },
+    ranks: ['代表', '委员', '副主任', '主任'],
+    startRank: '代表',
+    rankPositions: {
+      '代表': '人大代表（无行政级别）',
+      '委员': '人大专门委员会委员/法制委委员（副处级/正科级）',
+      '副主任': '人大常委会副主任（副厅级/正处级）',
+      '主任': '人大常委会主任（正厅级/副部级）'
+    },
+    rankScope: {
+      '代表': '参加人大会议、提交建议、参加执法检查',
+      '委员': '参与专门委员会审议、起草法规',
+      '副主任': '分管人大专委会、主持人大日常工作',
+      '主任': '统揽人大全面工作、主持人大常委会会议'
+    }
+  },
+];
+
+// ===================================================================
+// DATA: RANK-POSITION REFERENCE TABLE (政治常识审核专家)
+// ===================================================================
+const RANK_REFERENCE = `
+【中国公务员职级-职务对照表 — 生成事件时必须严格遵守】
+
+科员级：科员、办事员、试用期公务员
+科级（乡科级正副职）：副科长、科长、股长、副乡长、乡长、副镇长、镇长
+处级（县处级正副职）：副处长、处长、副县长、县长、副区长、区长、副调研员、调研员、市直部门副局长/局长、省直机关处长/副处长
+厅级（地厅级正副职）：副厅长、厅长、副市长、市长、副巡视员、巡视员、省直部门局长/副局长、省委省政府副秘书长
+部级（省部级正副职）：副省长、省长、副部长、部长、省委副书记、省委书记
+
+【职级换算】
+正处级 = 省厅处长 = 县长 = 市直局长 = 区长
+副厅级 = 省厅副厅长 = 副市长 = 省直副局长
+正科级 = 县直局长（小局）= 副乡镇长 = 市直副科长
+
+【职级逻辑红线 — 绝对禁止】
+1. 正处级不可能被"下放副县长"（副县长是副处，属于降职）
+2. 副厅级竞争者不可能是"副局长"（省厅副局长是处级）
+3. "下放基层锻炼"对处级干部通常指下县当县长/副县长，不是当科员
+4. 跨部门调动职级必须对等或提升，不能明升暗降
+5. 科级干部不可能分管全市财政/决策重大工程项目
+6. 同一系统中上级必须是更高职级（如处长管科长）
+`;
+
+// ===================================================================
+// DATA: DEPARTMENT EVENT THEMES (产品经理专家)
+// ===================================================================
+const DEPT_EVENT_THEMES = {
+  weiban: {
+    name: '委办（党委办公室）',
+    themes: ['领导讲话起草与修改', '会议组织与协调', '文件批示与传阅', '领导出行安排', '督查督办落实情况'],
+    flavor: '你是领导的参谋和耳目，核心围绕"服务领导"展开。事件应体现你在领导身边的特殊位置和信息优势。'
+  },
+  fuban: {
+    name: '府办（政府办公室）',
+    themes: ['政府工作报告起草', '跨部门事务协调', '政务督查', '突发事件应急处置', '政策文件审核'],
+    flavor: '你是政府运转的枢纽，核心围绕"上传下达"展开。事件应体现协调各方、处理突发事务的能力。'
+  },
+  zuzhiB: {
+    name: '组织部',
+    themes: ['干部考察与推荐', '任前公示与谈话', '换届选举筹备', '后备干部选拔', '领导班子调整', '学历与干部档案审核'],
+    flavor: '你是"管官的官"，核心围绕"管人"展开。事件应涉及干部考察、人事安排、换届博弈，体现人事即政治。'
+  },
+  jiwei: {
+    name: '纪委',
+    themes: ['信访举报处置', '巡视巡察配合', '诫勉谈话', '案件核查', '廉政建设检查', '谈话函询'],
+    flavor: '你握着查案权，核心围绕"监督查处"展开。事件应涉及举报线索、谈话突破、证据收集，体现查与被查的博弈。'
+  },
+  fagaB: {
+    name: '发改委',
+    themes: ['项目审批与核准', '专项资金分配', '招商引资谈判', '产业政策制定', '经济数据审核', '能源项目布局'],
+    flavor: '你操盘发展命脉，核心围绕"项目审批和资金"展开。事件应涉及项目评审、资金分配、利益输送诱惑。'
+  },
+  caizhi: {
+    name: '财政部门',
+    themes: ['预算编制与分配', '专项资金审批', '财政审计配合', '政府采购监管', '政府债务管理'],
+    flavor: '你是钱袋子的看守人，核心围绕"预算和资金"展开。事件应涉及预算博弈、资金拨付、各方来要钱。'
+  },
+  xuanchuanB: {
+    name: '宣传部',
+    themes: ['舆论引导与危机公关', '新闻发布与媒体关系', '网络舆情应对', '意识形态工作', '文化活动组织'],
+    flavor: '你掌控话语权，核心围绕"舆论和宣传"展开。事件应涉及舆情危机、媒体关系、意识形态敏感问题。'
+  },
+  tongzhan: {
+    name: '统战部',
+    themes: ['民主党派联络', '港澳台侨事务', '宗教事务管理', '非公有制经济人士统战', '民族事务协调'],
+    flavor: '你编织大团结网络，核心围绕"团结和平衡"展开。事件应体现不同利益群体的协调和平衡。'
+  },
+  zhengfaB: {
+    name: '政法委',
+    themes: ['社会治安综合治理', '信访维稳', '公检法协调', '扫黑除恶专项', '司法体制改革'],
+    flavor: '你协调警检法，核心围绕"稳定和正义"展开。事件应涉及大案要案、维稳压力、司法公正。'
+  },
+  jiaoyu: {
+    name: '教育部门',
+    themes: ['教育资源分配', '考试招生管理', '学校建设审批', '教师职称评定', '教育改革推进'],
+    flavor: '看似清水衙门实则隐性资源丰富，核心围绕"教育公平与资源"展开。事件应涉及招生、建校、职称等利益。'
+  },
+  keji: {
+    name: '科技部门',
+    themes: ['科研项目评审', '高新技术企业认定', '科技成果转化', '科技资金管理', '创新平台建设'],
+    flavor: '你是技术官僚，核心围绕"科技创新和项目"展开。事件应涉及科研经费、项目评审、产学研合作。'
+  },
+  zhengxie: {
+    name: '政协',
+    themes: ['提案办理与协商', '委员视察调研', '民主监督', '社情民意反映', '参政议政活动'],
+    flavor: '政协是协商议政舞台，核心围绕"建言献策"展开。事件应体现政协的独特政治地位和委员关系网络。'
+  },
+  renda: {
+    name: '人大',
+    themes: ['立法调研与审议', '执法检查', '代表建议办理', '人事任免表决', '专题询问'],
+    flavor: '人大是立法权行使者，核心围绕"立法和监督"展开。事件应体现人大的法定权威和监督职能。'
+  }
+};
+
+// ===================================================================
+// DATA: STORY ARC TEMPLATES (UX研究员)
+// ===================================================================
+function getStoryArcPrompt(step, maxSteps) {
+  const progress = step / maxSteps;
+  if (progress < 0.25) {
+    return `
+## 当前阶段：适应期（入职初期）
+- 主题：熟悉环境、学习规则、小考验
+- 事件风格：日常事务为主，冲突温和
+- 道德灰度：低（黑白分明，正确选择明显）
+- 晋升机会：低（主要是适应和学习）
+- 事件描述长度：80-120字`;
+  } else if (progress < 0.50) {
+    return `
+## 当前阶段：成长期（崭露头角）
+- 主题：能力展示、获得认可、小升迁
+- 事件风格：机遇与挑战并存，开始有小诱惑
+- 道德灰度：中低（开始出现灰色地带）
+- 晋升机会：中（表现好可获得提拔）
+- 事件描述长度：100-150字`;
+  } else if (progress < 0.75) {
+    return `
+## 当前阶段：博弈期（权力游戏）
+- 主题：大诱惑、站队选择、人际冲突
+- 事件风格：利益纠葛复杂，选择影响深远
+- 道德灰度：高（没有标准答案，每个选择都有代价）
+- 晋升机会：高（但也伴随高风险）
+- 事件描述长度：120-180字`;
+  } else {
+    return `
+## 当前阶段：决战期（巅峰对决）
+- 主题：重大危机、终极选择、命运转折
+- 事件风格：生死存亡，一念天堂一念地狱
+- 道德灰度：极高（可能需要在原则和生存之间选择）
+- 晋升机会：极高（也可能断崖式下跌）
+- 事件描述长度：150-220字`;
+  }
+}
+
+// ===================================================================
+// DATA: LOADING NARRATIVE MESSAGES
+// ===================================================================
+const LOADING_MESSAGES = [
+  '朝中有人正在议事...',
+  '新的机遇正在酝酿...',
+  '组织正在考察你的表现...',
+  '官场暗流涌动...',
+  '命运的天平正在倾斜...',
+  '有人正在提起你的名字...',
+  '一封密函正在路上...',
+  '风声渐紧，局势未明...',
+  '你的抉择将改变一切...',
+];
+
+// ===================================================================
+// DATA: PRESET EVENTS
+// ===================================================================
+// 预设事件已移除，全部由 AI 动态生成
+const PRESET_EVENTS = [];
+
+// ===================================================================
+// DATA: BACKGROUNDS (preset)
+// ===================================================================
+const BACKGROUNDS = {
+  weiban: {
+    level: '省级',
+    origin: '名校硕士研究生，通过省委统一遴选',
+    background: '普通家庭',
+    openingText: `你叫林若尘，中山大学政治学硕士，以笔试第一的成绩通过省委办公厅遴选，成为综合一处的一名年轻科员。
+
+报到的第一天，综合处长老王把你叫到办公室，语重心长地说："小林，委办是全省最重要的大脑，也是最烧脑的地方。材料要快、要准、要稳。领导说一，你不能理解成二。记住了吗？"
+
+你点了点头。窗外，省委大院的松柏在晨风中沉默地矗立。你知道，这条路走起来不会容易。但你也知道，这里是距离权力核心最近的地方。`,
+    rankTitle: '省委办公厅 综合一处 科员'
+  },
+  jiwei: {
+    level: '市级',
+    origin: '法学名校毕业，定向招录',
+    background: '普通家庭',
+    openingText: `你叫陈默，清华大学法学学士，以第一名的成绩通过市纪委定向招录考试，进入第三监察室，成为一名监察专员科员。
+
+入职第一天，室主任老郑把你叫到面前，直接说："小陈，我们这里没有客套，只有证据。你见过的那些人，有些进来的时候西装笔挺，出去的时候穿的是另一种衣服。你明白我的意思吗？"
+
+你明白。你来这里，是要做一个公正的人。但你不知道，在这条充满灰色的道路上，公正有多重？代价有多大？`,
+    rankTitle: '市纪委 第三监察室 科员'
+  },
+  zuzhiB: {
+    level: '县级',
+    origin: '选调生，重点大学定向培养',
+    background: '官二代（父亲为乡镇干部）',
+    openingText: `你叫王长松，一所"211"高校行政管理本科毕业，作为省委组织部选调生被分配到县委组织部干部室，成为一名科员。
+
+你父亲是邻县的一个乡镇书记，在你填报志愿的时候就说："儿子，组织部门是干部的娘家，进了那里，你这辈子的路就通了一半。"
+
+带你的老李见到你，意味深长地说："小伙子，我们这里管着全县所有干部的去向。记住，只有公正，才能走得远。"`,
+    rankTitle: '县委组织部 干部室 科员'
+  },
+  fagaB: {
+    level: '市级',
+    origin: '经济学研究生，竞争上岗',
+    background: '商二代（家族有建筑公司）',
+    openingText: `你叫赵策，复旦大学经济学硕士，以第二名的成绩通过市发改委综合处的竞争上岗，入职项目审批处，成为一名科员。
+
+第一天上班，你就注意到来找你办事的人络绎不绝——虽然你只是个科员，但发改委的项目审批处，谁都知道是个"肥缺"。
+
+你父亲在外地有一家建筑公司，昨天还给你发消息："儿子，发改委好啊，以后帮你老爸多关照一下。"你放下手机，望着窗外车水马龙，心里有些沉。`,
+    rankTitle: '市发改委 项目审批处 科员'
+  },
+  default: {
+    level: '县级',
+    origin: '公务员招考',
+    background: '普通家庭',
+    openingText: `你通过省统一公务员考试，以优秀的成绩成功上岸，从数千名竞争者中脱颖而出，踏入了体制的大门。
+
+报到那天，你望着眼前庄严的办公楼，心中既有期待，也有忐忑。这里将是你施展抱负的舞台，也将是你人生最重要的考场。
+
+你知道，官场的规则远比书本复杂，每一步都需要谨慎。但你更知道，你来这里，是为了做一些真正有意义的事情。`,
+    rankTitle: '科员'
+  }
+};
+
+// ===================================================================
+// RAG KNOWLEDGE BASE (官员履历数据库)
+// ===================================================================
+let RAG_DATA = null;  // 异步加载
+
+const GAME_RANK_TO_RAG_LEVEL = {
+  '科员': '科员级',
+  '副科级': '副处级',
+  '正科级': '正处级',
+  '副处级': '副处级',
+  '正处级': '正处级',
+  '副厅级': '副厅级',
+  '正厅级': '正厅级',
+  '委员': '科员级',
+  '常委': '正处级',
+  '副主席': '副厅级',
+  '代表': '科员级',
+};
+
+function getRAGLevel(gameRank) {
+  return GAME_RANK_TO_RAG_LEVEL[gameRank] || '科员级';
+}
+
+async function loadRAGKnowledge() {
+  try {
+    const resp = await fetch('rag_knowledge.json');
+    if (!resp.ok) throw new Error('RAG file not found');
+    RAG_DATA = await resp.json();
+    console.log('[RAG] Knowledge base loaded:', Object.keys(RAG_DATA.cases_by_dept_level).length, 'groups');
+  } catch (e) {
+    console.warn('[RAG] Failed to load knowledge base:', e.message);
+    RAG_DATA = null;
+  }
+}
+
+// ===================================================================
+// SMART RAG RETRIEVAL (智能RAG检索)
+// ===================================================================
+
+// 事件类型到案例类型的映射
+const EVENT_TYPE_TO_CASE_TYPE = {
+  'daily': ['日常政务', '基础工作', '常规业务'],
+  'opportunity': ['晋升机遇', '提拔重用', '考核考察'],
+  'temptation': ['腐败案例', '利益诱惑', '权钱交易'],
+  'politics': ['站队选择', '派系政治', '人事博弈'],
+  'crisis': ['危机应对', '突发事件', '群众上访'],
+  'interpersonal': ['人际关系', '职场博弈', '上下级关系']
+};
+
+// 叙事指令到事件类型的映射
+const NARRATIVE_TO_EVENT_TYPE = {
+  '基层工作细节': 'daily',
+  '人际博弈': 'interpersonal',
+  '突发危机': 'crisis',
+  '家庭与事业的冲突': 'interpersonal',
+  '权力运作': 'politics',
+  '道德抉择': 'temptation',
+  '外部环境变化': 'crisis',
+  '历史遗留问题': 'daily',
+  '跨部门协调': 'politics',
+  '个人成长时刻': 'opportunity',
+  '派系政治': 'politics',
+  '信息战': 'politics',
+  '群众路线': 'daily',
+  '数字化改革': 'daily',
+  '纪检风险': 'temptation'
+};
+
+// 案例分类标签
+function classifyCase(caseData) {
+  const tags = [];
+
+  // 腐败标签
+  if (caseData.is_corrupt) {
+    tags.push('腐败案例');
+    if (caseData.corrupt_detail) {
+      // corrupt_detail 可能是对象/数组/字符串，统一转成字符串再匹配
+      let detail = '';
+      if (typeof caseData.corrupt_detail === 'string') detail = caseData.corrupt_detail;
+      else if (Array.isArray(caseData.corrupt_detail)) detail = caseData.corrupt_detail.join(' ');
+      else if (typeof caseData.corrupt_detail === 'object') detail = Object.values(caseData.corrupt_detail).join(' ');
+      if (detail.includes('受贿')) tags.push('受贿');
+      if (detail.includes('贪污')) tags.push('贪污');
+      if (detail.includes('滥用职权')) tags.push('滥用职权');
+    }
+  }
+
+  // 职级标签
+  if (caseData.level) {
+    if (caseData.level.includes('正') || caseData.level.includes('副')) {
+      tags.push('高级官员');
+    }
+  }
+
+  // 组织标签
+  if (caseData.org) {
+    if (caseData.org.includes('纪委')) tags.push('纪检监察');
+    if (caseData.org.includes('发改委')) tags.push('经济发展');
+    if (caseData.org.includes('财政')) tags.push('财政管理');
+    if (caseData.org.includes('组织')) tags.push('组织人事');
+  }
+
+  return tags;
+}
+
+// 简化的文本相似度计算（基于关键词匹配）
+function calculateTextSimilarity(text1, text2) {
+  // 中文分词（简化版：按字符分割）
+  const tokenize = (text) => {
+    return text.toLowerCase()
+      .replace(/[^一-龥a-z0-9]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 1);
+  };
+
+  const tokens1 = tokenize(text1);
+  const tokens2 = tokenize(text2);
+
+  if (tokens1.length === 0 || tokens2.length === 0) return 0;
+
+  // 计算交集
+  const set1 = new Set(tokens1);
+  const set2 = new Set(tokens2);
+  const intersection = new Set([...set1].filter(x => set2.has(x)));
+
+  // 余弦相似度
+  const dotProduct = intersection.size;
+  const magnitude1 = Math.sqrt(set1.size);
+  const magnitude2 = Math.sqrt(set2.size);
+
+  if (magnitude1 === 0 || magnitude2 === 0) return 0;
+  return dotProduct / (magnitude1 * magnitude2);
+}
+
+// 智能案例检索：基于事件类型和案例标签
+function getRelevantCasesByEventType(eventType, deptId, gameRank, count = 2) {
+  if (!RAG_DATA) return null;
+
+  const ragLevel = getRAGLevel(gameRank);
+  const key = deptId + '_' + ragLevel;
+  const cases = RAG_DATA.cases_by_dept_level[key];
+
+  if (!cases || cases.length === 0) return null;
+
+  // 获取目标案例类型
+  const targetTypes = EVENT_TYPE_TO_CASE_TYPE[eventType] || ['日常政务'];
+
+  // 为每个案例计算相关性分数
+  const caseScores = cases.map(caseData => {
+    let score = 0;
+
+    // 案例标签匹配
+    const tags = classifyCase(caseData);
+    for (const target of targetTypes) {
+      for (const tag of tags) {
+        if (tag.includes(target) || target.includes(tag)) {
+          score += 2; // 标签匹配加分
+        }
+      }
+    }
+
+    // 文本相似度（基于组织、职位描述）
+    if (caseData.org) {
+      for (const target of targetTypes) {
+        score += calculateTextSimilarity(caseData.org, target) * 3;
+      }
+    }
+
+    if (caseData.position) {
+      for (const target of targetTypes) {
+        score += calculateTextSimilarity(caseData.position, target) * 2;
+      }
+    }
+
+    return { caseData, score };
+  });
+
+  // 按分数排序
+  caseScores.sort((a, b) => b.score - a.score);
+
+  // 返回最相关的案例
+  const topCases = caseScores.slice(0, count).map(item => item.caseData);
+
+  // 如果分数太低（<1），说明没有相关案例，返回随机案例
+  if (topCases[0] && caseScores[0].score < 1) {
+    const shuffled = [...cases].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
+
+  return topCases;
+}
+
+// 智能腐败案例检索：基于事件类型
+function getRelevantCorruptCase(eventType) {
+  if (!RAG_DATA || !RAG_DATA.corrupt_cases || RAG_DATA.corrupt_cases.length === 0) return null;
+
+  // temptation和crisis类型事件优先返回严重腐败案例
+  if (eventType === 'temptation' || eventType === 'crisis') {
+    const severeCases = RAG_DATA.corrupt_cases.filter(c =>
+      c.amount && (c.amount.includes('万') || c.amount.includes('亿'))
+    );
+    if (severeCases.length > 0) {
+      return severeCases[Math.floor(Math.random() * severeCases.length)];
+    }
+  }
+
+  return RAG_DATA.corrupt_cases[Math.floor(Math.random() * RAG_DATA.corrupt_cases.length)];
+}
+
+function sampleRAGCases(deptId, gameRank, count) {
+  if (!RAG_DATA) return null;
+  const ragLevel = getRAGLevel(gameRank);
+  const key = deptId + '_' + ragLevel;
+  const cases = RAG_DATA.cases_by_dept_level[key];
+  if (!cases || cases.length === 0) {
+    return null;
+  }
+  const sampled = [];
+  const shuffled = [...cases].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+    sampled.push(shuffled[i]);
+  }
+  return sampled;
+}
+
+function sampleCorruptCase() {
+  if (!RAG_DATA || !RAG_DATA.corrupt_cases || RAG_DATA.corrupt_cases.length === 0) return null;
+  return RAG_DATA.corrupt_cases[Math.floor(Math.random() * RAG_DATA.corrupt_cases.length)];
+}
+
+function samplePromotionPath() {
+  if (!RAG_DATA || !RAG_DATA.promotion_paths || RAG_DATA.promotion_paths.length === 0) return null;
+  return RAG_DATA.promotion_paths[Math.floor(Math.random() * RAG_DATA.promotion_paths.length)];
+}
+
+function buildRAGPromptSection(deptId, gameRank, eventType = 'daily') {
+  if (!RAG_DATA) return '';
+
+  const parts = [];
+
+  // 智能检索：基于事件类型获取相关案例
+  const cases = getRelevantCasesByEventType(eventType, deptId, gameRank, 2);
+  if (cases && cases.length > 0) {
+    parts.push('【同级真实官员任职参考】');
+    cases.forEach((c, i) => {
+      let line = `${i + 1}. ${c.name}：${c.level}，${c.position}（${c.org}）`;
+      if (c.area && c.area !== '中央nannan' && !c.area.includes('nan')) line += `，${c.area}`;
+      line += `，任期${c.period}`;
+      if (c.is_corrupt && c.corrupt_detail) {
+        line += ` [后被查处]`;
+      }
+      parts.push(line);
+    });
+  }
+
+  // 根据游戏进度和事件类型智能添加腐败案例
+  const step = gameState.step || 0;
+  const maxSteps = gameState.maxSteps || 10;
+  const progress = step / maxSteps;
+
+  // 在进度>50%或事件类型为temptation/crisis时添加腐败案例
+  if (progress > 0.5 || eventType === 'temptation' || eventType === 'crisis') {
+    const corrupt = getRelevantCorruptCase(eventType);
+    if (corrupt) {
+      parts.push('');
+      parts.push('【真实腐败案例参考】');
+      let cline = `${corrupt.name}（${corrupt.education}），${corrupt.crime}`;
+      if (corrupt.amount) cline += `，涉案${corrupt.amount}`;
+      if (corrupt.sentence) cline += `，判${corrupt.sentence}`;
+      parts.push(cline);
+    }
+  }
+
+  return parts.length > 0 ? parts.join('\n') : '';
+}
+
+// ===================================================================
+// GAME STATE
+// ===================================================================
+let gameState = {
+  dept: null,
+  difficulty: 'normal',
+  attrs: { politics: 50, execute: 50, network: 50, integrity: 80 },
+  rank: 0,
+  year: 2015,
+  step: 0,
+  maxSteps: 10,
+  events: [],
+  choices: [],
+  timeline: [],
+  background: null,
+  promoCallback: null,
+  usedPresetIndices: [],
+  aiEventCount: 0,
+};
+
+// ===================================================================
+// INIT
+// ===================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderDeptGrid();
+  loadSaved();
+  loadRAGKnowledge();  // 异步加载官员履历RAG知识库
+});
+
+function loadSaved() {
+  // No user-side config needed — API proxy handles everything
+}
+
+// ===================================================================
+// DEPT GRID
+// ===================================================================
+function renderDeptGrid() {
+  const grid = document.getElementById('dept-grid');
+  grid.innerHTML = DEPARTMENTS.map(d => `
+    <div class="dept-card" data-id="${d.id}" onclick="selectDept('${d.id}')">
+      <div class="dept-card-header">
+        <span class="dept-name">${d.name}${d.recommended ? '<span class="dept-recommended">推荐新手</span>' : ''}</span>
+        <span class="dept-icon">${d.icon}</span>
+      </div>
+      <p class="dept-desc">${d.desc}</p>
+      <div class="dept-ratings">
+        ${renderRating('权力', d.ratings.power)}
+        ${renderRating('忙碌', d.ratings.busy)}
+        ${renderRating('晋升', d.ratings.promotion)}
+        ${renderRating('风险', d.ratings.risk)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderRating(label, val) {
+  const stars = Array.from({length: 5}, (_, i) =>
+    `<span class="star ${i < val ? 'filled' : 'empty'}">★</span>`
+  ).join('');
+  return `
+    <div class="rating-item">
+      <span class="rating-label">${label}</span>
+      <div class="rating-stars">${stars}</div>
+    </div>`;
+}
+
+function selectDept(id) {
+  gameState.dept = DEPARTMENTS.find(d => d.id === id);
+  document.querySelectorAll('.dept-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+  document.getElementById('btn-start').disabled = false;
+}
+
+function selectDiff(el) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  gameState.difficulty = el.dataset.diff;
+}
+
+// ===================================================================
+// START GAME
+// ===================================================================
+async function startGame() {
+  if (!gameState.dept) return;
+  gameState.year = 2015;
+  gameState.step = 0;
+  gameState.rank = 0;
+  gameState.choices = [];
+  gameState.timeline = [];
+  gameState.attrs = { politics: 50, execute: 50, network: 50, integrity: 80 };
+  // Dynamic maxSteps: 2 steps per rank tier (more immersive, adapts to dept)
+  gameState.maxSteps = Math.max(8, gameState.dept.ranks.length * 2 + Math.floor(Math.random() * 3));
+  // Events will be generated on-the-fly by LLM; presets are fallback only
+  gameState.events = [];
+  gameState.usedPresetIndices = [];
+  gameState.aiEventCount = 0;
+
+  showScreen('loading');
+  document.getElementById('loading-text').textContent = '正在生成你的官途背景…';
+  document.getElementById('loading-subtext').textContent = `${gameState.dept.name} · ${getDiffLabel()} 模式`;
+
+  await generateBackground();
+}
+
+// ===================================================================
+// EVENT GENERATION (AI + Preset Fallback)
+// ===================================================================
+function getRandomPreset() {
+  if (gameState.usedPresetIndices.length >= PRESET_EVENTS.length) {
+    gameState.usedPresetIndices = [];
+  }
+  const available = [];
+  for (let i = 0; i < PRESET_EVENTS.length; i++) {
+    if (!gameState.usedPresetIndices.includes(i)) available.push(i);
+  }
+  const pick = available[Math.floor(Math.random() * available.length)];
+  gameState.usedPresetIndices.push(pick);
+  return { ...PRESET_EVENTS[pick], id: `preset_${pick}`, aiGenerated: false };
+}
+
+// ===================================================================
+// TEXT PARSER (replaces JSON parsing — much more robust)
+// ===================================================================
+function parseStructuredEvent(content, step, dept, currentRank) {
+  // Extract fields using 【key】markers
+  // For multi-line fields (like desc), capture everything until the next 【】
+  const fields = {};
+
+  // Split by 【】 markers
+  const markerRegex = /【([^】]+)】/g;
+  let match;
+  const keys = [];
+  while ((match = markerRegex.exec(content)) !== null) {
+    keys.push({ key: match[1], start: match.index + match[0].length });
+  }
+
+  for (let i = 0; i < keys.length; i++) {
+    const end = i + 1 < keys.length ? keys[i + 1].start - keys[i + 1].key.length - 2 : content.length;
+    fields[keys[i].key] = content.substring(keys[i].start, end).trim();
+  }
+
+  console.log('[Parser] Extracted fields:', Object.keys(fields));
+
+  // Parse choices (A, B, C, D)
+  const choices = [];
+  const letterLabels = ['A', 'B', 'C', 'D'];
+  for (const letter of letterLabels) {
+    const text = fields[`选项${letter}`];
+    const hint = fields[`选项${letter}提示`];
+    const effectStr = fields[`选项${letter}效果`];
+    if (!text) continue;
+
+    // Parse effect string like "政治嗅觉:5 执行力:-3 人脉资源:0 廉洁度:2 晋升:0"
+    const effect = { politics: 0, execute: 0, network: 0, integrity: 0, rank: 0 };
+    if (effectStr) {
+      const numMatch = effectStr.match(/政治嗅觉\s*[:：]\s*(-?\d+)/);
+      if (numMatch) effect.politics = parseInt(numMatch[1]) || 0;
+      const execMatch = effectStr.match(/执行力\s*[:：]\s*(-?\d+)/);
+      if (execMatch) effect.execute = parseInt(execMatch[1]) || 0;
+      const netMatch = effectStr.match(/人脉资源\s*[:：]\s*(-?\d+)/);
+      if (netMatch) effect.network = parseInt(netMatch[1]) || 0;
+      const intMatch = effectStr.match(/廉洁度\s*[:：]\s*(-?\d+)/);
+      if (intMatch) effect.integrity = parseInt(intMatch[1]) || 0;
+      const rankMatch = effectStr.match(/晋升\s*[:：]\s*(-?\d+)/);
+      if (rankMatch) effect.rank = parseInt(rankMatch[1]) || 0;
+    }
+
+    choices.push({ text, hint: hint || '', effect });
+  }
+
+  // Validate minimum
+  if (choices.length < 2) {
+    console.error('[Parser] Only', choices.length, 'choices found. Fields:', fields);
+    throw new Error('Need at least 2 choices, got ' + choices.length);
+  }
+
+  // Normalize tag
+  const tagMap = { daily: 'daily', opportunity: 'opportunity', temptation: 'temptation', politics: 'politics', crisis: 'crisis', interpersonal: 'interpersonal' };
+  const tagLabelMap = { daily: '日常政务', opportunity: '晋升机遇', temptation: '利益诱惑', politics: '政治站队', crisis: '危机应对', interpersonal: '人际关系' };
+  const rawTag = (fields['事件类型'] || 'daily').toLowerCase().trim();
+
+  return {
+    id: `ai_${step}`,
+    tag: tagMap[rawTag] || 'daily',
+    tagLabel: fields['类型标签'] || tagLabelMap[rawTag] || '日常政务',
+    title: fields['事件标题'] || '未命名事件',
+    desc: fields['事件描述'] || '（事件描述缺失）',
+    hint: fields['官场格言'] || '',
+    choices: choices.slice(0, 4),
+    aiGenerated: true
+  };
+}
+
+async function callLLM_event() {
+  const dept = gameState.dept;
+  const rankIdx = Math.min(gameState.rank, dept.ranks.length - 1);
+  const currentRank = dept.ranks[rankIdx];
+  const prevRank = rankIdx > 0 ? dept.ranks[rankIdx - 1] : '无';
+  const nextRank = rankIdx < dept.ranks.length - 1 ? dept.ranks[rankIdx + 1] : '已到顶峰';
+  const currentPosition = (dept.rankPositions && dept.rankPositions[currentRank]) || currentRank;
+  const prevPosition = (dept.rankPositions && dept.rankPositions[prevRank]) || prevRank;
+  const nextPosition = (dept.rankPositions && dept.rankPositions[nextRank]) || nextRank;
+  const currentScope = (dept.rankScope && dept.rankScope[currentRank]) || '';
+  const { attrs, difficulty, year, step, timeline, maxSteps } = gameState;
+
+  // Build recent event history for dedup (last 5 events)
+  const recentEvents = gameState.events
+    .filter(e => e && e.title)
+    .slice(-5)
+    .map((e, i) => `${i+1}. [${e.tagLabel || e.tag}] ${e.title}`)
+    .join('\n');
+
+  // Build recent choices for context (last 3)
+  const recentChoices = timeline.slice(-3).map(t => t.event).join('\n');
+
+  // Department flavor
+  const deptTheme = DEPT_EVENT_THEMES[dept.id];
+  const deptFlavor = deptTheme ? deptTheme.flavor : '';
+  const deptThemes = deptTheme ? deptTheme.themes.join('、') : '日常政务';
+
+  // Story arc
+  const storyArc = getStoryArcPrompt(step, maxSteps);
+
+  // Attribute-based hints (修复：增加平衡的选项提示)
+  let attrHints = [];
+  if (attrs.integrity < 40) {
+    attrHints.push('廉洁度很低，应生成利益诱惑升级或被调查的风险事件，但也提供挽回廉洁度的选项');
+  } else if (attrs.integrity > 80) {
+    attrHints.push('廉洁度很高，可生成考验原则底线或道德两难的事件');
+  } else {
+    // 中等廉洁度时，提供平衡的选项
+    attrHints.push('廉洁度中等，可生成需要权衡利弊的复杂决策事件，选项应包含廉洁度正负平衡的效果');
+  }
+  if (attrs.network > 70) attrHints.push('人脉资源丰富，可生成高层关系运作或被拉拢站队事件');
+  if (attrs.politics > 70) attrHints.push('政治嗅觉敏锐，可生成需要政治判断力的复杂博弈事件');
+  if (attrs.execute > 70) attrHints.push('执行力突出，可生成重大项目或危机处理事件');
+
+  // 修复：确保选项效果平衡，不能都是负面效果
+  attrHints.push('重要：四个选项的效果必须平衡分布，至少有2个选项应该包含正面的属性增益，廉洁度变化必须正负兼有');
+
+  const diffLabel = difficulty === 'easy' ? '轻松' : difficulty === 'hard' ? '硬核' : '标准';
+
+  // 随机叙事指令：让每次游戏事件不重复
+  const NARRATIVE_VARIANTS = [
+    '本次事件请侧重【基层工作细节】，多描写具体事务、文件、会议、汇报等日常场景',
+    '本次事件请侧重【人际博弈】，重点描写与上级、同级、下级的关系互动和微妙心态',
+    '本次事件请侧重【突发危机】，设计一个意外状况（群众上访、媒体曝光、安全事故等）',
+    '本次事件请侧重【家庭与事业的冲突】，融入家庭压力、配偶期望、子女教育等元素',
+    '本次事件请侧重【权力运作】，描写干部选拔、人事安排、资源分配等隐性博弈',
+    '本次事件请侧重【道德抉择】，设置一个两难的道德困境（忠诚vs正义、效率vs公平）',
+    '本次事件请侧重【外部环境变化】，引入上级政策调整、经济形势变化、人事变动等外部因素',
+    '本次事件请侧重【历史遗留问题】，涉及前任留下的烂摊子或历史包袱',
+    '本次事件请侧重【跨部门协调】，涉及与其他部门的利益纠葛和协作矛盾',
+    '本次事件请侧重【个人成长时刻】，设计一个让玩家反思和成长的转折性场景',
+    '本次事件请侧重【派系政治】，涉及站队选择、派系平衡、领导更替等敏感话题',
+    '本次事件请侧重【信息战】，涉及信息不对称、暗箱操作、谣言传播等',
+    '本次事件请侧重【群众路线】，涉及基层调研、民生诉求、群众口碑等',
+    '本次事件请侧重【数字化改革】，涉及信息化建设、数据治理、智慧政务等新课题',
+    '本次事件请侧重【纪检风险】，涉及巡视、审计、群众举报等廉洁风险事件',
+  ];
+  const narrativeDirective = NARRATIVE_VARIANTS[Math.floor(Math.random() * NARRATIVE_VARIANTS.length)];
+
+  const prompt = `你是一个精通中国公务员体制的官场模拟器事件生成器。你必须严格遵守中国公务员职级体系，任何职务安排都不能违背现实。
+
+## 叙事要求（本次必须遵守）
+${narrativeDirective}
+
+## 玩家精确身份
+- 部门：${dept.name}
+- 职级：${currentRank}
+- 担任职务：${currentPosition}
+- 上一级职务：${prevRank}（${prevPosition}）
+- 下一级职务：${nextRank}（${nextPosition}）
+- 当前职责范围：${currentScope}
+- 游戏年份：${year}年（第${step + 1}步/共${maxSteps}步）
+- 难度：${diffLabel}
+- 属性：政治嗅觉${attrs.politics} | 执行力${attrs.execute} | 人脉资源${attrs.network} | 廉洁度${attrs.integrity}
+- 属性相关提示：${attrHints.length > 0 ? attrHints.join('；') : '无特殊倾向'}
+
+## 【核心规则】职级-职务严格对照（生成后必须自检）
+${RANK_REFERENCE}
+
+## 玩家所在${dept.name}的完整职务晋升序列
+${dept.ranks.map((r, i) => `${r} → ${(dept.rankPositions && dept.rankPositions[r]) || r}`).join('\n')}
+
+## 部门特色
+${dept.name}的核心业务方向：${deptThemes}
+${deptFlavor}
+
+${storyArc}
+
+## 已生成事件历史（严禁重复类似场景）
+${recentEvents || '（第一个事件，无历史）'}
+
+## 玩家最近经历
+${recentChoices || '（刚开始官途）'}
+
+## 因果延续要求
+${timeline.length > 0 ? `玩家上一步做了选择，当前事件应体现该选择的后续影响，人物关系和情节应自然延续。` : '这是玩家的第一个事件，应侧重入职/到任的初始情景。'}
+
+${(() => {
+  // 从叙事指令推断事件类型，用于智能RAG检索
+  let eventType = 'daily';
+  for (const [narrative, type] of Object.entries(NARRATIVE_TO_EVENT_TYPE)) {
+    if (narrativeDirective.includes(narrative)) {
+      eventType = type;
+      break;
+    }
+  }
+  const rag = buildRAGPromptSection(dept.id, currentRank, eventType);
+  return rag ? '## 真实官员履历参考（请参考这些真实经历增强事件的真实感）\n' + rag : '';
+})()}
+
+## 职务自检清单（生成事件后你必须逐条检查）
+1. 事件中出现的所有人物职务，是否与职级对照表一致？
+2. 你的上级领导必须是比你高至少半级的职务（如你是科长，上级必须是处长/副局长或以上）
+3. 你的同级同事/竞争对手，职务应与你相当或高半级
+4. 你的下级必须是比你低至少半级的职务
+5. 如果事件涉及"提拔"，目标职务必须是你下一级（${nextRank}：${nextPosition}），不能越级提拔
+6. 如果事件涉及"下放"，目标职务不能低于你下一级（下放是平调或略降，不是断崖式降职）
+7. 科级干部不能决策全市性重大事项，处级干部不能直接指挥全省
+8. 确认事件中没有出现职级倒挂（如科长管处长、科员审批重大项目）
+
+## 严格输出格式（用分隔符，不要输出JSON）
+请严格按照以下格式输出，每个字段占一行，用指定标记分隔。不要输出JSON，不要输出任何多余的文字或解释。
+
+【事件类型】daily或opportunity或temptation或politics或crisis或interpersonal
+【类型标签】中文标签（如"日常政务""晋升机遇"）
+【事件标题】8到15字的标题
+【事件描述】有画面感有冲突的详细描述，参考真实官场案例。可以写多行，直到下一个标记为止。
+【官场格言】一句暗示或格言
+【选项A】选项文字描述
+【选项A提示】这个选项的提示或暗示
+【选项A效果】政治嗅觉:+5 执行力:+3 人脉资源:+2 廉洁度:0 晋升:0
+【选项B】选项文字描述
+【选项B提示】这个选项的提示或暗示
+【选项B效果】政治嗅觉:0 执行力:0 人脉资源:0 廉洁度:0 晋升:0
+【选项C】选项文字描述
+【选项C提示】这个选项的提示或暗示
+【选项C效果】政治嗅觉:-2 执行力:0 人脉资源:-3 廉洁度:+5 晋升:0
+【选项D】选项文字描述
+【选项D提示】这个选项的提示或暗示
+【选项D效果】政治嗅觉:+3 执行力:+5 人脉资源:+4 廉洁度:-3 晋升:0
+
+注意：
+- 必须使用具体数字，不要使用X占位符
+- 每个属性必须是-30到+20之间的整数（包括正数和负数）
+- 廉洁度变化很重要，好的选择应该增加或保持廉洁度
+- 晋升（rank）只在表现特别突出的选项上设为1（且只能提拔到${nextRank}）
+- 四个选项的效果必须平衡分布，不要都是正面或都是负面
+- 选项必须具体且各有利弊，玩家需要权衡
+- 事件描述中的人物职务必须符合自检清单的所有要求
+- 【事件描述】可以写多行长文，直到遇到下一个【】标记为止
+- 只输出以上标记格式的内容，不要输出任何其他文字`;
+
+  console.log('[LLM] Calling /api/llm-proxy (API Key safe on server)');
+  console.log('[LLM] Prompt length:', prompt.length, 'chars');
+  
+  const content = await callLLMProxy(prompt);
+  console.log('[LLM] Response content length:', content.length);
+  if (content.length === 0) {
+    throw new Error('LLM returned empty content');
+  }
+  console.log('[LLM] Raw content preview:', content.substring(0, 300));
+
+  // Parse structured text (not JSON) using 【】 markers
+  return parseStructuredEvent(content, step, dept, currentRank);
+}
+
+async function generateBackground() {
+  let bg = null;
+  const deptId = gameState.dept.id;
+
+  try {
+    bg = await callLLM_background(gameState.dept.name, gameState.difficulty);
+  } catch(e) {
+    console.warn('LLM error, using preset background', e);
+  }
+
+  if (!bg) {
+    console.error('[LLM] Background generation failed, using preset');
+    bg = BACKGROUNDS[deptId] || BACKGROUNDS.default;
+  } else {
+    console.log('[LLM] Background generated successfully');
+  }
+
+  gameState.background = bg;
+  renderBackgroundScreen(bg);
+  showScreen('background');
+}
+
+async function callLLM_background(deptName, difficulty) {
+  const prompt = `你是一个中国官场文学作家。请为一个选择进入"${deptName}"的玩家生成一段官途开局背景。
+要求：
+1. 包含：姓名（中文名）、入职年份（2014-2016年间）、毕业院校、入职方式、家庭背景、初始职务全称
+2. 用第二人称（"你"）写一段200-300字的沉浸式开场白，语言要有文学感和官场韵味
+3. 难度：${difficulty}（easy=家境好无风险/normal=普通背景/hard=困难重重）
+4. 严格按照以下分隔符格式输出，不要输出JSON：
+
+【行政级别】省级/市级/县级
+【入职方式】入职方式描述
+【家庭背景】家庭背景描述
+【开场白】用第二人称写的200-300字沉浸式开场白，可多行，直到下一个标记为止
+【初始职务】初始职务全称`;
+
+  const content = await callLLMProxy(prompt, { max_tokens: 1500 });
+  if (content.length === 0) throw new Error('Background LLM returned empty');
+
+  // Parse structured text using 【】markers
+  const fields = {};
+  const markerRegex = /【([^】]+)】/g;
+  let match;
+  const keys = [];
+  while ((match = markerRegex.exec(content)) !== null) {
+    keys.push({ key: match[1], start: match.index + match[0].length });
+  }
+  for (let i = 0; i < keys.length; i++) {
+    const end = i + 1 < keys.length ? keys[i + 1].start - keys[i + 1].key.length - 2 : content.length;
+    fields[keys[i].key] = content.substring(keys[i].start, end).trim();
+  }
+
+  return {
+    level: fields['行政级别'] || '县级',
+    origin: fields['入职方式'] || '公务员招考',
+    background: fields['家庭背景'] || '普通家庭',
+    openingText: fields['开场白'] || '你踏入了体制的大门...',
+    rankTitle: fields['初始职务'] || '科员'
+  };
+}
+
+// ===== LLM Proxy — all requests go through /api/llm-proxy (API Key safe on server) =====
+const LLM_PROXY_URL = '/api/llm-proxy';
+
+async function callLLMProxy(prompt, options = {}) {
+  // 优化后的参数设置
+  const { max_tokens = 1500, temperature = 0.8, top_p = 0.90, stream = false } = options;
+
+  // 检测请求类型并使用对应的最优参数
+  let finalTemp = temperature;
+  let finalMaxTokens = max_tokens;
+  let finalTopP = top_p;
+
+  // 背景生成使用更保守的参数
+  if (prompt.includes('官途开局背景') || prompt.includes('生成一段官途开局背景')) {
+    finalTemp = 0.7;
+    finalMaxTokens = 1000;
+    finalTopP = 0.85;
+  }
+
+  const resp = await fetch(LLM_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      max_tokens: finalMaxTokens,
+      temperature: finalTemp,
+      top_p: finalTopP,
+      stream
+    })
+  });
+
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || `Proxy error ${resp.status}`);
+  }
+
+  // 处理流式响应
+  if (stream) {
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      // 解析 SSE 格式的数据
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              fullText += parsed.content;
+            }
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    return fullText;
+  }
+
+  // 非流式响应（原有逻辑）
+  const data = await resp.json();
+  return data.content || '';
+}
+
+// ===================================================================
+// BACKGROUND SCREEN
+// ===================================================================
+function renderBackgroundScreen(bg) {
+  const meta = document.getElementById('story-meta');
+  meta.innerHTML = `
+    <span class="story-badge highlight">${gameState.dept.icon} ${gameState.dept.name}</span>
+    <span class="story-badge">📍 ${bg.level}</span>
+    <span class="story-badge">🎓 ${bg.origin}</span>
+    <span class="story-badge">👤 ${bg.background}</span>
+    <span class="story-badge">💼 ${bg.rankTitle}</span>
+  `;
+
+  typewriterEffect(document.getElementById('story-text'), bg.openingText);
+
+  const attrsGrid = document.getElementById('attrs-grid');
+  attrsGrid.innerHTML = renderAttrsGrid(gameState.attrs);
+}
+
+let typingTimer = null;
+
+function typewriterEffect(el, text, speed = 15) {
+  el.innerHTML = '';
+  if (typingTimer) clearInterval(typingTimer);
+  let i = 0;
+  const cursor = document.createElement('span');
+  cursor.className = 'typing-cursor';
+  el.appendChild(cursor);
+
+  typingTimer = setInterval(() => {
+    if (i < text.length) {
+      el.insertBefore(document.createTextNode(text[i]), cursor);
+      i++;
+    } else {
+      clearInterval(typingTimer);
+      typingTimer = null;
+      cursor.remove();
+      const skipBtn = document.getElementById('skip-btn');
+      if (skipBtn) skipBtn.style.display = 'none';
+    }
+  }, speed);
+
+  window._typewriterState = { el, text, cursor, timer: typingTimer };
+}
+
+function skipTypewriter() {
+  if (typingTimer) {
+    clearInterval(typingTimer);
+    typingTimer = null;
+  }
+  const el = document.getElementById('story-text');
+  const state = window._typewriterState;
+  if (state && el) {
+    el.innerHTML = '';
+    el.appendChild(document.createTextNode(state.text));
+    if (state.cursor && state.cursor.parentNode) state.cursor.remove();
+  }
+  const skipBtn = document.getElementById('skip-btn');
+  if (skipBtn) skipBtn.style.display = 'none';
+}
+
+function renderAttrsGrid(attrs) {
+  const defs = [
+    { key: 'politics', label: '政治嗅觉', cls: 'politics' },
+    { key: 'execute', label: '执行力', cls: 'execute' },
+    { key: 'network', label: '人脉资源', cls: 'network' },
+    { key: 'integrity', label: '廉洁度', cls: 'integrity' },
+  ];
+  return defs.map(d => `
+    <div class="attr-item">
+      <div class="attr-label">
+        <span>${d.label}</span>
+        <span class="attr-value-text" style="color:var(--gold)">${attrs[d.key]}</span>
+      </div>
+      <div class="attr-bar">
+        <div class="attr-fill ${d.cls}" style="width:${attrs[d.key]}%"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ===================================================================
+// GAME LOOP
+// ===================================================================
+function enterGame() {
+  gameState.step = 0;
+  updateHUD();
+  renderEvent();
+  showScreen('game');
+}
+
+function updateHUD() {
+  const dept = gameState.dept;
+  const rankIdx = Math.min(gameState.rank, dept.ranks.length - 1);
+  const currentRank = dept.ranks[rankIdx];
+  document.getElementById('hud-rank').textContent = currentRank;
+  document.getElementById('hud-dept').textContent = dept.name.split('（')[0];
+  document.getElementById('hud-year').textContent = gameState.year + ' 年';
+  document.getElementById('hud-step').textContent = `第 ${gameState.step} 年`;
+  document.getElementById('hud-progress').style.width = `${(gameState.step / gameState.maxSteps) * 100}%`;
+}
+
+async function renderEvent() {
+  if (gameState.step >= gameState.maxSteps) {
+    await resolveEnding();
+    return;
+  }
+
+  const container = document.getElementById('event-container');
+  container.innerHTML = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Show loading animation with rotating narrative text
+  let loadingInterval;
+  let msgIdx = Math.floor(Math.random() * LOADING_MESSAGES.length);
+  container.innerHTML = `
+    <div class="event-loading">
+      <div class="loading-brush"></div>
+      <div class="loading-brush-text">天机推演中...</div>
+      <div class="loading-narrative" id="loading-narrative">${LOADING_MESSAGES[msgIdx]}</div>
+    </div>
+  `;
+  loadingInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % LOADING_MESSAGES.length;
+    const el = document.getElementById('loading-narrative');
+    if (el) {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        if (el) { el.textContent = LOADING_MESSAGES[msgIdx]; el.style.opacity = '1'; }
+      }, 200);
+    }
+  }, 1200);
+
+  // AI event generation with automatic retry
+  let event = null;
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`[LLM] Retry attempt ${attempt}/${MAX_RETRIES}...`);
+        // Brief delay before retry
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+      console.log('[LLM] Starting event generation...', attempt === 0 ? '' : `(attempt ${attempt+1})`);
+      event = await callLLM_event();
+      gameState.aiEventCount++;
+      console.log('[LLM] Event generated successfully, aiEventCount:', gameState.aiEventCount);
+      break;
+    } catch (e) {
+      const errMsg = e.message || String(e);
+      console.error(`[LLM] Event generation FAILED (attempt ${attempt+1}/${MAX_RETRIES+1}):`, errMsg);
+      if (attempt === MAX_RETRIES) {
+        // All retries exhausted — show error with better UX
+        if (loadingInterval) clearInterval(loadingInterval);
+        const shortMsg = errMsg.length > 80 ? errMsg.substring(0, 80) + '...' : errMsg;
+        container.innerHTML = `
+          <div class="event-card" style="text-align:center;padding:40px 24px;">
+            <div style="font-size:2rem;margin-bottom:16px;">⚠</div>
+            <div style="font-size:1.1rem;font-weight:bold;color:var(--gold);margin-bottom:10px;">AI 推演暂时中断</div>
+            <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:24px;">已尝试 ${MAX_RETRIES + 1} 次推演，均未成功。请稍后再试。<br><span style="font-size:0.7rem;opacity:0.5;">${shortMsg}</span></div>
+            <button onclick="renderEvent()" style="padding:10px 28px;background:var(--gold);color:#1a1a2e;border:none;border-radius:6px;font-size:0.95rem;cursor:pointer;font-weight:bold;">重新推演</button>
+          </div>
+        `;
+        return;
+      }
+      // Otherwise continue to next retry
+    }
+  }
+
+  // Stop loading animation
+  if (loadingInterval) clearInterval(loadingInterval);
+
+  // Store event for makeChoice access
+  gameState.events[gameState.step] = event;
+
+  // Render event card
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  card.style.opacity = '0';
+  card.style.transform = 'translateX(-20px)';
+  card.style.transition = 'all 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span class="event-tag ${event.tag}">${event.tagLabel}</span>
+      <span class="event-year">${gameState.year} 年</span>
+    </div>
+    <h2 class="event-title">${event.title}</h2>
+    <p class="event-desc">${event.desc}</p>
+    <div class="hint-box">${event.hint}</div>
+    <div class="choices-list">
+      ${event.choices.map((c, i) => `
+        <button class="choice-btn" onclick="makeChoice(${i})">
+          <span class="choice-letter">${String.fromCharCode(65+i)}</span>
+          <span class="choice-text">
+            ${c.text}
+            <span class="choice-hint">${c.hint}</span>
+          </span>
+        </button>`).join('')}
+    </div>
+    <div style="margin-top:20px;">
+      ${renderAttrsPanel()}
+    </div>
+  `;
+
+  container.innerHTML = '';
+  container.appendChild(card);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateX(0)';
+    });
+  });
+}
+
+function renderAttrsPanel() {
+  return `<div class="attrs-panel">
+    <div class="attrs-title">当前属性</div>
+    <div class="attrs-grid">${renderAttrsGrid(gameState.attrs)}</div>
+  </div>`;
+}
+
+function makeChoice(idx) {
+  const event = gameState.events[gameState.step];
+  // Guard against stale/missing event (e.g. LLM generation failed at this step)
+  if (!event || !Array.isArray(event.choices)) {
+    console.error('[makeChoice] No event found at step', gameState.step, '— re-invoking renderEvent');
+    renderEvent();
+    return;
+  }
+  const choice = event.choices[idx];
+  if (!choice) {
+    console.error('[makeChoice] Invalid choice index', idx, 'for event at step', gameState.step);
+    renderEvent();
+    return;
+  }
+
+  // Record timeline
+  gameState.timeline.push({
+    year: gameState.year,
+    event: `${event.title} — 选择：${choice.text}`
+  });
+
+  // Apply effects
+  const eff = choice.effect || {};
+  if (eff.politics) gameState.attrs.politics = clamp(gameState.attrs.politics + eff.politics, 0, 100);
+  if (eff.execute) gameState.attrs.execute = clamp(gameState.attrs.execute + eff.execute, 0, 100);
+  if (eff.network) gameState.attrs.network = clamp(gameState.attrs.network + eff.network, 0, 100);
+  if (eff.integrity) gameState.attrs.integrity = clamp(gameState.attrs.integrity + eff.integrity, 0, 100);
+
+  const oldRank = gameState.rank;
+  if (eff.rank) gameState.rank = Math.min(gameState.rank + eff.rank, gameState.dept.ranks.length - 1);
+
+  gameState.choices.push({ event: event.id, choice: idx, text: choice.text });
+
+  // Show attr change popup
+  showAttrChange(eff);
+
+  gameState.step++;
+  gameState.year++;
+  updateHUD();
+
+  // === Auto-promotion check (if no explicit rank in choice effect) ===
+  if (!eff.rank) {
+    const promoChance = calcPromotionChance();
+    if (Math.random() < promoChance) {
+      gameState.rank = Math.min(gameState.rank + 1, gameState.dept.ranks.length - 1);
+      updateHUD();
+    }
+  }
+
+  // === Check if promoted → show celebration ===
+  if (gameState.rank > oldRank) {
+    const oldTitle = gameState.dept.ranks[oldRank];
+    const newTitle = gameState.dept.ranks[gameState.rank];
+    showPromotionCelebration(oldTitle, newTitle, () => {
+      renderEvent();
+    });
+    return; // Don't render next event until user dismisses celebration
+  }
+
+  // Visual feedback with animation
+  const btns = document.querySelectorAll('.choice-btn');
+  if (btns[idx]) {
+    btns[idx].style.borderColor = 'var(--gold)';
+    btns[idx].style.background = 'rgba(201,168,76,0.12)';
+    btns[idx].style.transform = 'scale(1.01)';
+    btns[idx].style.transition = 'all 0.2s ease';
+    btns.forEach((b, i) => {
+      if (i !== idx) {
+        b.style.opacity = '0.35';
+        b.style.transform = 'scale(0.99)';
+        b.style.transition = 'all 0.2s ease';
+      }
+      b.disabled = true;
+    });
+  }
+
+  setTimeout(() => { renderEvent(); }, 800);
+}
+
+function calcPromotionChance() {
+  // Base chance: ~15% per step, modified by attributes and difficulty
+  const base = 0.12;
+  const attrBonus = (gameState.attrs.politics + gameState.attrs.execute + gameState.attrs.network) / 300 * 0.12;
+  const integrityBonus = gameState.attrs.integrity >= 70 ? 0.05 : gameState.attrs.integrity < 40 ? -0.08 : 0;
+  const diffMod = gameState.difficulty === 'easy' ? 1.4 : gameState.difficulty === 'hard' ? 0.6 : 1.0;
+  const rankPenalty = gameState.rank * 0.015; // Higher rank = harder to promote
+  return Math.max(0.03, (base + attrBonus + integrityBonus - rankPenalty) * diffMod);
+}
+
+function showPromotionCelebration(oldRank, newRank, callback) {
+  const overlay = document.getElementById('promo-overlay');
+  const icons = ['🏛', '⭐', '🏆', '🎖️', '👑'];
+  const rankIdx = gameState.rank;
+  document.getElementById('promo-icon').textContent = icons[Math.min(rankIdx, icons.length - 1)];
+  document.getElementById('promo-title').textContent = '恭 喜 晋 升';
+  document.getElementById('promo-subtitle').textContent = newRank;
+  document.getElementById('promo-rank-from').innerHTML = `${oldRank} <span class="arrow">→</span> ${newRank}`;
+  gameState.promoCallback = callback;
+  overlay.classList.add('active');
+}
+
+function dismissPromotion() {
+  const overlay = document.getElementById('promo-overlay');
+  overlay.classList.remove('active');
+  setTimeout(() => {
+    if (gameState.promoCallback) {
+      gameState.promoCallback();
+      gameState.promoCallback = null;
+    }
+  }, 400);
+}
+
+function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+// ===================================================================
+// ENDING
+// ===================================================================
+async function resolveEnding() {
+  showScreen('loading');
+  document.getElementById('loading-text').textContent = '正在生成你的官途结局…';
+  document.getElementById('loading-subtext').textContent = '岁月沉淀，尘埃落定';
+
+  await new Promise(r => setTimeout(r, 1500));
+
+  const ending = computeEnding();
+  renderResultScreen(ending);
+  showScreen('result');
+}
+
+function computeEnding() {
+  const { attrs, rank, dept, difficulty, maxSteps } = gameState;
+  const integrityScore = attrs.integrity;
+  const politicsScore = attrs.politics;
+  const networkScore = attrs.network;
+  const executeScore = attrs.execute;
+  const totalScore = (politicsScore + executeScore + networkScore + integrityScore) / 4;
+
+  const maxRankIdx = Math.min(rank, dept.ranks.length - 1);
+  const finalRank = dept.ranks[maxRankIdx];
+
+  // Determine ending type
+  let endingType, endingTitle, endingIcon, endingSummary, evalText;
+
+  // 真实数据驱动的结局计算
+  // 基于原始官员数据分析：53%腐败比例，但游戏中玩家主动选择会降低此比例
+  // 目标分布：BAD 15-25%, MID2 15-20%, MID 35-45%, GOOD 20-30%, GREAT 5-10%
+  //
+  // 难度系数：
+  // easy: 0.8 -> 降低风险，更宽松
+  // normal: 1.0 -> 标准风险，接近现实
+  // hard: 1.3 -> 提高风险，更严苛
+  const diffFactor = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.3 : 1.0;
+  const risk = (100 - integrityScore) * diffFactor;
+
+  // 综合表现评分：60%来自属性平均分，40%来自职级进度
+  const performanceScore = totalScore * 0.6 + (rank / maxSteps) * 100 * 0.4;
+
+  // 添加随机性，模拟真实世界的不确定性（±10%波动）
+  const randomFactor = 0.9 + Math.random() * 0.2; // 0.9-1.1
+  const adjustedRisk = risk * randomFactor;
+
+  if (adjustedRisk >= 65) {
+    // 坏结局：廉洁度太低，面临严重后果
+    // normal模式下需要廉洁度<35，hard模式下<50
+    endingType = 'BAD';
+    endingIcon = '⚖️';
+    endingTitle = '落马——双规室里的人生终点';
+    endingSummary = `你在仕途上走了${gameState.maxSteps}年，最终因廉洁度严重透支，被纪委立案调查。从光鲜的官员到囹圄之身，这条路走得快，也走得险。`;
+    evalText = `你的官途，是一面镜子。\n\n廉洁度只剩 ${integrityScore} 分。你选择了那条看似捷径的路，在权力的诱惑面前一次次妥协，终于走到了无法回头的岔路口。\n\n现实中，类似你路径的典型案例数以千计。大多数人在落马之前，都觉得自己足够聪明，足够小心。\n\n历史不以人的主观愿望为转移。\n\n【官途评语】风险偏好者 · 短视逐利型`;
+  } else if (integrityScore >= 70 && performanceScore >= 60 && rank >= 2) {
+    // 放宽GREAT结局条件：廉洁度70（原75），职级2（原3）
+    endingType = 'GREAT';
+    endingIcon = '🌟';
+    endingTitle = `光荣退休 — ${finalRank}`;
+    endingSummary = `你在体制内耕耘了${gameState.maxSteps}年，以${finalRank}的职级光荣退休。廉洁、能干、有人缘，你走出了一条让人尊敬的官途。`;
+    evalText = `你的官途，是一首质朴的诗。\n\n政治嗅觉 ${politicsScore} | 执行力 ${executeScore} | 人脉 ${networkScore} | 廉洁度 ${integrityScore}\n\n你始终知道，真正的权力不是用来占便宜的，而是用来做事情的。你在关键节点做出了正确的选择，在诱惑面前守住了底线。\n\n体制内，像你这样的人，其实并不少。只是很多时候，他们的故事不够"戏剧性"，所以不常被讲述。\n\n【官途评语】清廉务实型 · 稳步致远者`;
+  } else if (integrityScore >= 50 && performanceScore >= 45) {
+    // 放宽GOOD结局条件：廉洁度50（原60），综合评分45（原55）
+    endingType = 'GOOD';
+    endingIcon = '📋';
+    endingTitle = `平稳落幕 — ${finalRank}`;
+    endingSummary = `你在体制内任职${gameState.maxSteps}年，以${finalRank}退休。没有特别耀眼，也没有重大失误，是官场中大多数人的真实写照。`;
+    evalText = `你的官途，是一杯温热的白开水。\n\n平均属性 ${Math.round(totalScore)} 分。你没有走极端，也没有特别突出。\n\n体制内，像你这样的人是主流——不贪不懒，但也没有那么炽热的理想。你完成了自己该完成的工作，领了该领的薪水，安然退休。\n\n这也许不够"精彩"，但也许正是大多数人最真实的选择。\n\n【官途评语】务实稳健型 · 中流砥柱者`;
+  } else if (integrityScore >= 35) {
+    // 保持一定廉洁度，至少是普通结局（调任闲职）
+    endingType = 'MID';
+    endingIcon = '🌿';
+    endingTitle = '调任闲职，颐养天年';
+    endingSummary = `你在仕途上勤恳工作了${gameState.maxSteps}年，但晋升之路并不顺畅，最终被调往一个清闲的岗位，远离权力中心，却也得享安宁。`;
+    evalText = `你的官途，是一条幽静的林间小道。\n\n你没能登上权力的顶峰，但也没有摔落深渊。或许是运气，或许是能力，或许只是命运的安排。\n\n在那个清闲的岗位上，你有时间思考那些在忙碌中来不及思考的问题：权力究竟意味着什么？\n\n【官途评语】淡泊名利型 · 随遇而安者`;
+  } else {
+    // 只有廉洁度<35才会受到处分
+    endingType = 'MID2';
+    endingIcon = '⚡';
+    endingTitle = '受到处分，仕途受阻';
+    endingSummary = `你在某些关键节点做出了错误选择，受到了党纪处分，仕途由此蒙上阴影，再难升迁。但你保住了自由，也有机会重新反思。`;
+    evalText = `你的官途，是一次跌倒后的漫长爬起。\n\n廉洁度 ${integrityScore}，你在某些诱惑面前没能完全守住。处分来临时，你意识到代价的沉重。\n\n好在，你没有走到最深处。那些更严重的后果，你在最后关头没有选择。\n\n官场上的"教训"，代价不同。你的代价，还在可承受的范围内。\n\n【官途评语】犹豫摇摆型 · 代价教训者`;
+  }
+
+  return { endingType, endingTitle, endingIcon, endingSummary, evalText, finalRank };
+}
+
+function renderResultScreen(ending) {
+  const emblemEl = document.getElementById('result-emblem');
+  emblemEl.textContent = ending.endingIcon;
+
+  const heroEl = document.querySelector('.result-hero');
+  const titleEl = document.getElementById('result-title');
+  heroEl.className = 'result-hero';
+  titleEl.className = 'result-title';
+
+  if (ending.endingType === 'GREAT') {
+    emblemEl.style.background = 'rgba(201,168,76,0.15)';
+    emblemEl.style.borderColor = 'var(--gold)';
+    heroEl.classList.add('ending-great');
+    titleEl.classList.add('ending-great');
+  } else if (ending.endingType === 'BAD') {
+    emblemEl.style.background = 'rgba(204,42,42,0.15)';
+    emblemEl.style.borderColor = 'var(--red)';
+    heroEl.classList.add('ending-bad');
+    titleEl.classList.add('ending-bad');
+  } else {
+    emblemEl.style.background = 'rgba(42,74,140,0.15)';
+    emblemEl.style.borderColor = 'var(--accent-light)';
+    heroEl.classList.add('ending-mid');
+    titleEl.classList.add('ending-mid');
+  }
+    ending.endingType === 'GREAT' ? '★ 官途圆满 ★' :
+    ending.endingType === 'BAD' ? '▲ 落马结局 ▲' : '— 官途终章 —';
+
+  document.getElementById('result-title').textContent = ending.endingTitle;
+  document.getElementById('result-summary').textContent = ending.endingSummary;
+
+  // Final attrs
+  document.getElementById('final-attrs-grid').innerHTML = renderAttrsGrid(gameState.attrs);
+
+  // Timeline
+  const tl = document.getElementById('result-timeline');
+  tl.innerHTML = gameState.timeline.map(t => `
+    <div class="timeline-item">
+      <div class="timeline-year">${t.year} 年</div>
+      <div class="timeline-event">${t.event}</div>
+    </div>`).join('');
+
+  // Eval
+  document.getElementById('eval-text').textContent = ending.evalText;
+}
+
+// ===================================================================
+// SCREEN MANAGEMENT
+// ===================================================================
+function showScreen(name) {
+  const screens = { select: 'screen-select', loading: 'screen-loading', background: 'screen-background', game: 'screen-game', result: 'screen-result' };
+  Object.entries(screens).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (k === name) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+  window.scrollTo(0, 0);
+}
+
+function restartGame() {
+  showScreen('select');
+  document.querySelectorAll('.dept-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-start').disabled = true;
+  gameState.dept = null;
+}
+
+// ===================================================================
+// UI HELPERS
+// ===================================================================
+function showHowToPlay() {
+  document.getElementById('modal-howtoplay').classList.remove('hidden');
+}
+
+function hideHowToPlay() {
+  document.getElementById('modal-howtoplay').classList.add('hidden');
+}
+
+// Close modal on overlay click
+document.getElementById('modal-howtoplay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) hideHowToPlay();
+});
+
+function showAttrChange(effects) {
+  const labels = { politics: '政治嗅觉', execute: '执行力', network: '人脉资源', integrity: '廉洁度' };
+  const popup = document.getElementById('attr-popup');
+  const content = document.getElementById('attr-popup-content');
+
+  const rows = Object.entries(effects)
+    .filter(([k]) => labels[k])
+    .map(([k, v]) => {
+      const sign = v > 0 ? '+' : '';
+      const cls = v > 0 ? 'pos' : 'neg';
+      return `<div class="attr-change-row">
+        <span class="attr-change-label">${labels[k]}</span>
+        <span class="attr-change-val ${cls}">${sign}${v}</span>
+      </div>`;
+    }).join('');
+
+  if (!rows && !effects.rank) return;
+
+  // Build content with optional rank indicator
+  let html = rows;
+  if (effects.rank && effects.rank > 0) {
+    html = `<div class="attr-change-row" style="margin-bottom:6px;">
+      <span class="attr-change-label" style="color:var(--gold);font-weight:700;">晋升</span>
+      <span class="attr-change-val pos" style="color:var(--gold);font-weight:700;">+1级</span>
+    </div>` + html;
+  }
+
+  content.innerHTML = html;
+  popup.classList.add('visible');
+  setTimeout(() => popup.classList.remove('visible'), 2800);
+}
+
+function shareResult() {
+  const title = document.getElementById('result-title').textContent;
+  const dept = gameState.dept?.name || '';
+  const text = `我在【官途模拟器】走了一遍官场，结局是：${title}\n部门：${dept}\n你也来试试？`;
+  if (navigator.share) {
+    navigator.share({ title: '官途模拟器', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => showToast('复制失败，请手动复制'));
+  }
+}
+
+function copyResult() {
+  const title = document.getElementById('result-title').textContent;
+  const eval_ = document.getElementById('eval-text').textContent;
+  const text = `【官途模拟器结局】\n${title}\n\n${eval_.split('\n').slice(-1)[0]}`;
+  navigator.clipboard.writeText(text).then(() => showToast('结局文字已复制', 'success')).catch(() => showToast('请手动复制'));
+}
+
+// ===================================================================
+// HELPERS
+// ===================================================================
+function getDiffLabel() {
+  return { easy: '轻松模式', normal: '标准模式', hard: '硬核模式' }[gameState.difficulty] || '标准模式';
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+</script>
+</body>
+</html>

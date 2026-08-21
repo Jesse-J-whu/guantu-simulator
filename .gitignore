@@ -28,3 +28,13 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+
+# Runtime data (SQLite 留存库)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/

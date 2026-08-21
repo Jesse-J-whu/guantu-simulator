@@ -353,7 +353,7 @@ async function run100PlayerSimulation() {
     // 每个难度测试所有玩家
     for (const player of players) {
       // 模拟游戏
-      let state = {
+      const state = {
         attrs: { politics: 50, execute: 50, network: 50, integrity: 80 },
         rank: 0,
         step: 0

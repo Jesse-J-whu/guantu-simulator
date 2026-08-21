@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "types": ["vite/client", "node"],
+    // repro-e2e-stall.mts 为一次性诊断脚本(引用无类型的 CJS server 模块),不参与类型检查。
+    "noEmit": true
+  },
+  "include": ["tests", "e2e", "scripts/diversity-scan.mts"]
+}

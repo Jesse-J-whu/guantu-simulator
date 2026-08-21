@@ -107,9 +107,9 @@ async function simulatePlayerChoice(event, playerType) {
 请从以下四个选项中选择一个，只回答选项字母（A/B/C/D），不要解释：
 
 ${event.choices.map((c, i) => {
-  const letter = String.fromCharCode(65 + i);
-  return `${letter}. ${c.text}\n   提示：${c.hint}`;
-}).join('\n')}
+    const letter = String.fromCharCode(65 + i);
+    return `${letter}. ${c.text}\n   提示：${c.hint}`;
+  }).join('\n')}
 
 记住：作为${playerType.name}官员，根据${playerType.traits}的原则做出选择。只回答选项字母。`;
 
@@ -137,7 +137,7 @@ ${event.choices.map((c, i) => {
  */
 async function simulateGame(playerType, maxSteps = 10) {
   // 初始状态
-  let state = {
+  const state = {
     attrs: { politics: 50, execute: 50, network: 50, integrity: 80 },
     rank: 0,
     step: 0,

@@ -1,17 +1,51 @@
 {
   "name": "guantu-simulator",
-  "version": "1.0.0",
-  "description": "官途模拟器 - 古代官场模拟游戏",
+  "version": "2.0.0",
+  "description": "官途模拟器 - AI驱动的官场沉浸式模拟游戏",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
-    "build": "echo 'Static site, no build needed'"
+    "dev": "node scripts/dev.js",
+    "dev:server": "node server.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"server/**/*.js\" \"tests/**/*.js\"",
+    "e2e": "playwright test",
+    "loadtest": "node scripts/loadtest.mjs"
   },
   "dependencies": {
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@playwright/test": "^1.54.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autocannon": "^8.0.0",
+    "eslint": "^9.30.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.8.0",
+    "typescript-eslint": "^8.35.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
