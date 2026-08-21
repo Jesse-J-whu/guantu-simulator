@@ -24,6 +24,8 @@ db.exec(`
     violations INTEGER, violation_detail TEXT, summary TEXT
   );
 `);
+// 全量刷新语义:重复运行不叠加旧行(表无主键,先清空)。
+db.exec('DELETE FROM audits');
 
 let pass = 0;
 let fail = 0;

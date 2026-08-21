@@ -294,7 +294,7 @@ async function runPlayer(combo: Combo, playerIdx: number): Promise<PlayerResult>
 
   const usedTitles: string[] = [];
   const usedChoiceTexts: string[] = [];
-  const usedDescs: string[] = []; [];
+  const usedDescs: string[] = [];
 
   for (let step = 0; step < MAX_STEPS; step++) {
     try {

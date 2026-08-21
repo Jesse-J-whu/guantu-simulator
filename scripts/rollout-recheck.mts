@@ -79,11 +79,15 @@ for (const f of files) {
       rankResidual += fixRankFacts(s.desc).fixes.length;
 
       // 属性数学:after == clamp(before + effect)(全量核对,非抽样)。
+      // 计数单位与 driver 对齐:一步内任一属性不符计 1 次
+      // (driver 是"应变化而未变化"的逐步启发式,这里是精确 clamp 数学)。
       const applied = s.effectsApplied ?? {};
+      let attrMismatch = false;
       for (const k of ATTR_KEYS) {
         const expect = Math.max(0, Math.min(100, (prevAttrs[k] ?? 0) + (applied[k] ?? 0)));
-        if (expect !== (s.attrsAfter[k] ?? -1)) attrNotApplied++;
+        if (expect !== (s.attrsAfter[k] ?? -1)) attrMismatch = true;
       }
+      if (attrMismatch) attrNotApplied++;
       // 供给选项全零也违例(与 driver 同口径,对 chosen 项计入一次即可——driver 对
       // 每张选项卡计一次,这里按选项卡口径保持一致,上面已计)。
       // 职级:promoted → +1;否则不变。
