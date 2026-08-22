@@ -24,7 +24,8 @@ docs/
 ├── user-journey.md            真实浏览器一局完整截图 walkthrough(E2E 产物)
 ├── rollout-report.md          19,500 玩家大规模测试终版报告(结论层)
 ├── diversity-report.md        真实 GLM 多样性验证报告(结论层)
-├── audit-prompt-template.md   39 个审计 subagent 的提示词模板
+├── audit-prompt-template.md   39 个审计 subagent 的提示词模板(v3 全量)
+├── audit-prompt-template-v4.md v4 定点审计模板(3 个 hard 代表组合)
 ├── latest/                    ★ 活文档:当前最新设计(改代码必同步)
 │   ├── overview.md            产品/架构/快速开始(配架构图+用户截图)
 │   ├── engine.md              引擎与算法(效果/amplify/晋升/结局/去重,配图)
@@ -35,13 +36,16 @@ docs/
 ├── experiments/               可复现实验报告(方法/结果/如何查看/复现命令)
 │   ├── exp-rollout-19500.md   19,500 玩家大规模用户测试
 │   ├── exp-diversity-realglm.md  真实 GLM 多样性验证
-│   └── exp-loadtest.md        压测与容量修复(含 stats TTL 前后对照)
+│   ├── exp-loadtest.md        压测与容量修复(含 stats TTL 前后对照)
+│   └── exp-promotion-balance.md  晋升平衡调优(上界分析 + 1.3→1.2 + v4 重跑)
 ├── dev-history/               开发史:每个 commit 的动机/改动/验证
 │   ├── phase-1.md             算法大修 + 真 GLM 验证(20 commit)
-│   └── phase-2.md             大规模用户测试(11 commit)
+│   ├── phase-2.md             大规模用户测试(11 commit)
+│   └── phase-3.md             文档基建 + 官职显示 + E4 晋升平衡调优(12 commit)
 └── assets/                    全部插图(脚本生成,可复现)
     ├── global/                10 张全局图(g01架构 … g10审计热图)
     ├── demos/                 39 张部门图(每部门×3)
+    ├── experiments/promo-balance/  4 张晋升平衡图(预算vs成本/新旧对比/直方图/难度×策略)
     └── user-journey/          8 张真实浏览器截图(E2E)
 ```
 
