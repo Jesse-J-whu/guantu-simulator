@@ -69,6 +69,26 @@ describe('晋升成本与进度', () => {
     expect(promotionCost(normal)).toBeLessThan(promotionCost(hard));
   });
 
+  it('hard 系数 1.2:五星部门前四级累计成本 97,落在最优预算 101 内(平衡回归锚点)', () => {
+    // 委办(晋升5星,星级系数 0.88)hard 各级成本 = round(基数×1.2×0.88)。
+    // 1.3 时代累计 106 > 预算 101,完美发挥也拿不到第 4 次晋升 → 调 1.2。
+    const weibanHard = { ...createGame('weiban', 'hard', new SeededRandom(1)) } as GameState;
+    const costs: number[] = [];
+    for (let r = 0; r < 4; r++) {
+      costs.push(promotionCost({ ...weibanHard, rank: r }));
+    }
+    expect(costs).toEqual([13, 19, 27, 38]);
+    expect(costs.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(101);
+  });
+
+  it('hard 系数 1.2:四星部门(系数0.94)前四级累计 104 仍超预算,星级分层保留', () => {
+    const fagaHard = { ...createGame('fagaB', 'hard', new SeededRandom(1)) } as GameState;
+    let cum = 0;
+    for (let r = 0; r < 4; r++) cum += promotionCost({ ...fagaHard, rank: r });
+    expect(cum).toBe(104);
+    expect(cum).toBeGreaterThan(101);
+  });
+
   it('进度随点数增长,到顶为 1', () => {
     let s = freshState();
     const cost = promotionCost(s);
