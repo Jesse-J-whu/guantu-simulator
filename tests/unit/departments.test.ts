@@ -67,7 +67,7 @@ describe('rankPositionOf(职级索引 → 官职名)', () => {
     expect(rankPositionOf(weiban, 99)).toBe(rankPositionOf(weiban, 5));
   });
 
-  it('全部 13 部门全部职级都有官职映射(与 rankRules 对照表同源)', () => {
+  it('全部 13 部门全部职级都有官职映射(手工维护表,无回退)', () => {
     for (const dept of DEPARTMENTS) {
       for (let i = 0; i < dept.ranks.length; i++) {
         const pos = rankPositionOf(dept, i);

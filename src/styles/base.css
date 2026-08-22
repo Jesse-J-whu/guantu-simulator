@@ -606,6 +606,9 @@
       .game-topbar { padding: 12px 16px; }
       .game-info { gap: 12px; }
       .info-value { font-size: 0.82rem; }
+      /* 触屏没有 title 悬停:官职全名放开换行,不做截断 */
+      .info-value-position { max-width: none; white-space: normal; overflow: visible; }
+      .event-position { max-width: 60vw; }
     }
 
     .progress-bar-wrap {
