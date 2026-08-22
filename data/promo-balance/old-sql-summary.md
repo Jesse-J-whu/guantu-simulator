@@ -27,7 +27,7 @@ weiban(6)/fuban(5)/zuzhiB(7)/jiwei(6)/caizhi(5)/xuanchuanB(5)/keji(5) 与记忆�
 
 - **normal 全体均值 2.92 ✓ 落在"普通 2-3 次"区间**。
 - **"优秀玩家 4-5 次"只在 L≥5 部门成立**:normal 难度 good 均值——L7 zuzhiB 5.00,L6 weiban/jiwei 5.00、fagaB 4.01、zhengfaB 4.00,L5 各部门 4.00。但 **L4 部门(jiaoyu/tongzhan/renda)good 恒等于 3.00 = 阶梯上限,根本到不了 4-5 次**;zhengxie(L3)good 恒 2.00。上限封顶使该设计目标在 4 个部门结构性不可达。
-- **hard 难度 good 在全部 13 个部门精确等于 3.00**(每格 125 人均值零偏差),bad 精确 1.00(仅 4 级部门 0.98-0.99,共 6 人 24 步 0 晋升卡在科员/代表)。hard 下晋升次数对纯策略近乎确定,难度是唯一主导变量。
+- **hard 难度 good 在 12 个 L≥4 部门精确等于 3.00**(每格 125 人均值零偏差;政协 L3 为阶梯上限 2.00),bad ≈1.00(全体 0.997,仅 L4 部门 0.98-0.99,共 6 人 24 步 0 晋升卡在科员/代表)。hard 下晋升次数对纯策略近乎确定,难度是唯一主导变量。
 
 ## 3. 分布退化(大量玩家卡在同一级)
 
@@ -60,8 +60,16 @@ GREAT 与 GOOD 的晋升差(easy 0.34 / normal 0.67 / hard 0.70)远小于 GOOD �
 
 ## 文件清单
 
-- `dist_by_combo.csv` — 39 组合全量:秩次分布 rank0..rank6、mean/p25/p50/p75、到顶率、四策略均值
-- `worst.csv` — mean_promotions 升序前 15
-- `promo_by_ending_type.csv` — promotions × ending_type × difficulty 交叉
-- `mapping_validation.txt` — final_rank 映射交叉验证(抽样3组合+全局)
-- `analyze.py` — 可复现脚本(只读打开 DB)
+以下为当时工作区的分析产物清单。**其中仅 `dist_by_combo.csv`(入库时改名
+`old-dist-by-combo.csv`)与本摘要 `old-sql-summary.md` 随仓库归档**;
+`worst.csv`、`promo_by_ending_type.csv`、`mapping_validation.txt`、`analyze.py`
+未入库,且 **v3 库 `data/rollout.db` 已被 v4 全量重跑覆盖**(mass-rollout 启动即清库),
+这四个文件无法从 v3 数据再导出——所幸 §5 前 15 名与 §6 交叉表的关键数字
+已抄录在本摘要正文,v3 侧可核验的幸存记录为:`old-dist-by-combo.csv`(逐组合全量)、
+本摘要、`data/rollout-audit/` + `rollout-audit-summary.json`(39 组合审计)。
+
+- `dist_by_combo.csv` — 39 组合全量:秩次分布 rank0..rank6、mean/p25/p50/p75、到顶率、四策略均值(→入库 `old-dist-by-combo.csv`)
+- `worst.csv` — mean_promotions 升序前 15(未入库,结论见 §5)
+- `promo_by_ending_type.csv` — promotions × ending_type × difficulty 交叉(未入库,结论见 §6)
+- `mapping_validation.txt` — final_rank 映射交叉验证(抽样3组合+全局)(未入库,结论见文件头第 5 行)
+- `analyze.py` — 可复现脚本(只读打开 DB)(未入库)

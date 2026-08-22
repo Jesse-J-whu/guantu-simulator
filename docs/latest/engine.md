@@ -131,7 +131,7 @@ export interface ApplyResult {
 ```text
 applyChoice(state, idx)                     gameEngine.ts:237
   ├─ clamp 四维属性(0-100)                 :249-252
-  ├─ gainPromotionPoints(effect, tag, diff) :255   promotion.ts:28
+  ├─ gainPromotionPoints(effect, tag, diff) :255   promotion.ts:35
   ├─ effect.promotion>0 → tryPromote        :259   (突出表现即时考核)
   ├─ step+1 / year+1                        :262-263
   ├─ isReviewStep(step) → tryPromote        :266-268 (每 3 步年度考核)
@@ -291,8 +291,8 @@ mock 的衔接语也只回引 prompt 中真实存在的上一步标题(`server/m
 ```ts
 export const PROMOTION_COSTS = [12, 18, 26, 36, 48, 62, 78]; // :16 索引=当前职级
 export const REVIEW_INTERVAL = 3;                            // :19 每 3 步年度考核
-const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 }; // :22 成本系数(2026-08-22 hard 1.3→1.2,见下)
-const INTEGRITY_GATE = 35;                                   // :25 廉洁门槛
+export const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 }; // :29 成本系数(2026-08-22 hard 1.3→1.2,见下)
+const INTEGRITY_GATE = 35;                                   // :32 廉洁门槛
 ```
 
 > **hard 1.3→1.2 的调参依据**(2026-08-22 晋升平衡分析,完整推导见
@@ -303,9 +303,9 @@ const INTEGRITY_GATE = 35;                                   // :25 廉洁门槛
 > 累计 97 ≤ 101(勉强可达,险胜感),四星 104 / 三星 110 仍不可达,星级分层恢复。
 > easy/normal 与 `ending.ts` 的落马难度系数(独立常量,仍 1.3)均不受影响。
 
-**挣点**(`gainPromotionPoints`,`:28-43`):基础分 `max(0, min(5, 2 + net/8))`(net=四维净和,−20..+25 映射到 0..5);廉洁行为 +1;机遇类事件 +1;难度乘系数(easy ×1.2 / hard ×0.8);四舍五入到 0.5。**清廉能吏的单步典型值约 3.5-7 分(基础封顶 5,廉洁与机遇加成、easy 乘数可再抬高),和稀泥的 D 槽选项净和低且无廉洁加分,典型约 0-2.5 分。**
+**挣点**(`gainPromotionPoints`,`:35-50`):基础分 `max(0, min(5, 2 + net/8))`(net=四维净和,−20..+25 映射到 0..5);廉洁行为 +1;机遇类事件 +1;难度乘系数(easy ×1.2 / hard ×0.8);四舍五入到 0.5。**清廉能吏的单步典型值约 3.5-7 分(基础封顶 5,廉洁与机遇加成、easy 乘数可再抬高),和稀泥的 D 槽选项净和低且无廉洁加分,典型约 0-2.5 分。**
 
-**成本**(`promotionCost`,`:46-54`):
+**成本**(`promotionCost`,`:53-61`):
 
 ```ts
 const base = PROMOTION_COSTS[Math.min(state.rank, PROMOTION_COSTS.length - 1)];
@@ -314,15 +314,15 @@ const diff = DIFFICULTY_FACTOR[state.difficulty];
 const deptFactor = 1 - (state.dept.ratings.promotion - 3) * 0.06;
 return Math.max(6, Math.round(base * diff * deptFactor));
 ```
-(`src/engine/promotion.ts:49-53`)
+(`src/engine/promotion.ts:56-60`)
 
 部门星级真实生效:委办/组织部(晋升 5 星)升一级便宜 12%,政协/人大(2 星)贵 6%。已到阶梯顶端返回 `Infinity`。
 
 **触发节奏**(编排在 `gameEngine.applyChoice` 里,见第 3 节流程图):
 
 - 每次选择先挣点;`effect.promotion > 0` 的「突出表现」选项**立即**触发考核(`gameEngine.ts:259`);
-- 否则每逢 `step % 3 === 0` 的年度考核步触发(`isReviewStep`,`:64-66`;考核步为第 3/6/…/24 步);
-- `tryPromote`(`:72-95`)依次检查:未到顶、点数够、**廉洁度 ≥ 35**——廉洁不足时**暂缓提拔且点数保留**(`:81`),等廉洁回血后下一次考核照常晋升。审计曾逐例验证坏玩家的晋升在廉洁跌破 35 后「戛然而止」。
+- 否则每逢 `step % 3 === 0` 的年度考核步触发(`isReviewStep`,`:71-73`;考核步为第 3/6/…/24 步);
+- `tryPromote`(`:79-102`)依次检查:未到顶、点数够、**廉洁度 ≥ 35**——廉洁不足时**暂缓提拔且点数保留**(`:88`),等廉洁回血后下一次考核照常晋升。审计曾逐例验证坏玩家的晋升在廉洁跌破 35 后「戛然而止」。
 
 实测节奏(19,500 玩家,每格 1,625 人):
 

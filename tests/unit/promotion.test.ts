@@ -72,6 +72,9 @@ describe('晋升成本与进度', () => {
   it('hard 系数 1.2:五星部门前四级累计成本 97,落在最优预算 101 内(平衡回归锚点)', () => {
     // 委办(晋升5星,星级系数 0.88)hard 各级成本 = round(基数×1.2×0.88)。
     // 1.3 时代累计 106 > 预算 101,完美发挥也拿不到第 4 次晋升 → 调 1.2。
+    // 注意:预算≈101 是收入侧(gainPromotionPoints/amplify 抽奖池/事件净和)的
+    // 涌现属性,非代码常量——若改动收入公式或事件库,须重跑
+    // `npx tsx scripts/promotion-ceiling.mts 200` 复核预算,再回头调整本锚点。
     const weibanHard = { ...createGame('weiban', 'hard', new SeededRandom(1)) } as GameState;
     const costs: number[] = [];
     for (let r = 0; r < 4; r++) {
