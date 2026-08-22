@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Ending, GameState } from '../../engine/types.ts';
+import { rankPositionOf } from '../../engine/departments.ts';
 import { AttrBars } from '../game/AttrBars.tsx';
 
 interface ResultScreenProps {
@@ -62,6 +63,7 @@ export function ResultScreen({ state, ending, onRestart }: ResultScreenProps) {
             <span>晋升 {state.promotions.length} 次</span>
             <span>走过 {state.maxSteps} 年</span>
             <span>终职 {ending.finalRank}</span>
+            <span data-testid="final-position">官职 {rankPositionOf(state.dept, state.rank)}</span>
           </div>
         </div>
 

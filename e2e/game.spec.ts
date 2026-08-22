@@ -58,6 +58,10 @@ test('完整一局:部门选择 → 开局背景 → 24 步抉择 → 结局', a
     if (step === 1) {
       titleAtStep1 = prevTitle;
       expect(titleAtStep1.length).toBeGreaterThan(0);
+      // 每年界面必须常驻显示当前职级与官职(HUD 两项 + 事件卡徽标)。
+      await expect(page.locator('#hud-rank')).toContainText('科员');
+      await expect(page.locator('#hud-position')).toContainText('综合科科员');
+      await expect(page.locator('[data-testid="event-position"]')).toContainText('科员');
       await page.screenshot({ path: 'test-results/e2e-03-first-event.png' });
     }
 
@@ -108,6 +112,8 @@ test('完整一局:部门选择 → 开局背景 → 24 步抉择 → 结局', a
     if (outcome === 'PROMO') {
       // 文案带装饰空格("恭 喜 晋 升"),用正则断言。
       await expect(promo).toContainText(/晋\s*升/);
+      // 晋升庆祝显示官职变迁行(如 综合科科员/秘书 → 综合科副科长/副主任科员)。
+      await expect(page.locator('[data-testid="promo-position"]')).toContainText('→');
       if (promotionShots < 2) {
         await page.screenshot({ path: `test-results/e2e-05-promotion-${promotionShots + 1}.png` });
       }
@@ -131,6 +137,8 @@ test('完整一局:部门选择 → 开局背景 → 24 步抉择 → 结局', a
   await expect(page.locator('#screen-result')).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('.result-title')).toBeVisible();
   await expect(page.locator('.result-hero')).toBeVisible();
+  // 结算统计显示终局官职(与 rankPositions 对照表同源)。
+  await expect(page.locator('[data-testid="final-position"]')).toContainText('官职');
   await page.screenshot({ path: 'test-results/e2e-06-result.png', fullPage: true });
 
   // 时间线应完整呈现本局轨迹。

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEPARTMENTS, getDeptById } from '../../src/engine/departments.ts';
+import { DEPARTMENTS, getDeptById, rankPositionOf } from '../../src/engine/departments.ts';
 
 /** 用户校准的星级表(2026-08):部门 → [权力, 繁忙, 晋升, 风险]。 */
 const EXPECTED_RATINGS: Record<string, [number, number, number, number]> = {
@@ -50,5 +50,35 @@ describe('部门星级表(用户校准值)', () => {
 
   it('getDeptById 未知 id 抛错', () => {
     expect(() => getDeptById('nonexistent')).toThrow();
+  });
+});
+
+describe('rankPositionOf(职级索引 → 官职名)', () => {
+  it('委办各职级返回对应官职', () => {
+    const weiban = getDeptById('weiban');
+    expect(rankPositionOf(weiban, 0)).toBe('综合科科员/秘书');
+    expect(rankPositionOf(weiban, 1)).toBe('综合科副科长/副主任科员');
+    expect(rankPositionOf(weiban, 5)).toBe('省委副秘书长');
+  });
+
+  it('索引越界取首/末级,不抛错', () => {
+    const weiban = getDeptById('weiban');
+    expect(rankPositionOf(weiban, -3)).toBe(rankPositionOf(weiban, 0));
+    expect(rankPositionOf(weiban, 99)).toBe(rankPositionOf(weiban, 5));
+  });
+
+  it('全部 13 部门全部职级都有官职映射(手工维护表,无回退)', () => {
+    for (const dept of DEPARTMENTS) {
+      for (let i = 0; i < dept.ranks.length; i++) {
+        const pos = rankPositionOf(dept, i);
+        expect(pos, `${dept.id}[${i}]`).toBeTruthy();
+        expect(pos, `${dept.id}[${i}]`).not.toBe(dept.ranks[i]); // 不允许回退到职级名
+      }
+    }
+  });
+
+  it('缺映射的部门回退职级名本身', () => {
+    const dept = { ...getDeptById('weiban'), rankPositions: {} };
+    expect(rankPositionOf(dept, 1)).toBe('副科级');
   });
 });

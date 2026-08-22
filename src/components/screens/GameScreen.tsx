@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ChoiceEffect, GameState, PromotionRecord } from '../../engine/types.ts';
+import { rankPositionOf } from '../../engine/departments.ts';
 import { HUD } from '../game/HUD.tsx';
 import { EventCard } from '../game/EventCard.tsx';
 import { AttrChangeToast } from '../game/AttrChangeToast.tsx';
@@ -30,6 +31,8 @@ export function GameScreen({
 }: GameScreenProps) {
   const [chosenIdx, setChosenIdx] = useState<number | null>(null);
   const event = state.currentEvent;
+  const rankName = state.dept.ranks[Math.min(state.rank, state.dept.ranks.length - 1)];
+  const positionLabel = `${rankName} · ${rankPositionOf(state.dept, state.rank)}`;
 
   const handleChoose = (idx: number) => {
     setChosenIdx(idx);
@@ -63,6 +66,7 @@ export function GameScreen({
               disabled={chosenIdx !== null}
               chosenIdx={chosenIdx}
               onChoose={handleChoose}
+              positionLabel={positionLabel}
             />
           ) : null}
         </div>
@@ -72,7 +76,12 @@ export function GameScreen({
         <AttrChangeToast effects={toast.effects} pointsGained={toast.pointsGained} onDismiss={onDismissToast} />
       ) : null}
       {lastPromotion && toast === null ? (
-        <PromotionOverlay promotion={lastPromotion} onContinue={onPromotionContinue} />
+        <PromotionOverlay
+          promotion={lastPromotion}
+          onContinue={onPromotionContinue}
+          positionFrom={state.dept.rankPositions[lastPromotion.fromRank] || lastPromotion.fromRank}
+          positionTo={state.dept.rankPositions[lastPromotion.toRank] || lastPromotion.toRank}
+        />
       ) : null}
     </div>
   );
