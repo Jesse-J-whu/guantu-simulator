@@ -28,7 +28,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    // *.test.tsx 以文件头 // @vitest-environment jsdom 切换到 DOM 环境(组件测试)。
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx', 'tests/integration/**/*.test.ts'],
     testTimeout: 30000,
   },
 });
