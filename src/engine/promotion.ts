@@ -18,8 +18,15 @@ export const PROMOTION_COSTS = [12, 18, 26, 36, 48, 62, 78];
 /** 考核间隔:每 N 步一次年度考核。 */
 export const REVIEW_INTERVAL = 3;
 
-/** 难度成本系数。 */
-const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.3 };
+/**
+ * 难度成本系数。hard 由 1.3 调至 1.2(2026-08-22 晋升平衡分析,见
+ * docs/experiments/exp-promotion-balance.md):19,500 人 rollout 证实 1.3 时
+ * hard 下最优/good 玩家点数预算恒 101,而 ≥5 级阶梯部门第 4 次晋升累计成本
+ * ≥106 —— 完美发挥也差 5 点,所有 tall 部门 good 一律 3 次封顶,晋升星级
+ * 失去区分度(与"优秀玩家升 4-5 级"的设计期望不符)。1.2 时五星部门
+ * (系数 0.88)第 4 次累计 97 ≤ 101 可达、四星及以下仍不可达,星级重新分层。
+ */
+export const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 };
 
 /** 廉洁度低于此值暂缓提拔。 */
 const INTEGRITY_GATE = 35;

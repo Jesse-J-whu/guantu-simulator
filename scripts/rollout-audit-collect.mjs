@@ -1,6 +1,11 @@
 /**
- * 汇总 39 个 subagent 的轨迹审计结论 → rollout.db 新增 audits 表 + 控制台报告。
+ * 汇总 subagent 的轨迹审计结论 → rollout.db 的 audits 表 + summary JSON + 控制台报告。
  * 用法:NODE_OPTIONS=--experimental-sqlite node scripts/rollout-audit-collect.mjs
+ * 可选环境变量(用于多套审计并存,如 E4 v4 定点审计):
+ *   AUDIT_DIR  审计 JSON 目录(相对仓库根,默认 data/rollout-audit)
+ *   OUT        summary JSON 输出路径(相对仓库根,默认 data/rollout-audit-summary.json)
+ * 注意:audits 表是全量刷新语义(先清空再插入),后一次运行会覆盖前一次的表内容;
+ * 多套审计请用不同 OUT,并在文档中注明 audits 表当前装的是哪一套。
  */
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,11 +13,12 @@ import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const AUDIT_DIR = resolve(ROOT, 'data', 'rollout-audit');
-const files = readdirSync(AUDIT_DIR).filter((f) => f.endsWith('.json')).sort();
+const AUDIT_DIR = resolve(ROOT, process.env.AUDIT_DIR || 'data/rollout-audit');
+const OUT = resolve(ROOT, process.env.OUT || 'data/rollout-audit-summary.json');
+const files = readdirSync(AUDIT_DIR).filter((f) => f.endsWith('.json')).filter((f) => f !== 'summary.json').sort();
 
 if (files.length === 0) {
-  console.error('data/rollout-audit/ 下没有审计结论 JSON');
+  console.error(`${AUDIT_DIR} 下没有审计结论 JSON`);
   process.exit(1);
 }
 
@@ -67,8 +73,8 @@ const report = {
   verdict: fail === 0 ? 'ALL PASS' : `${fail} COMBO(S) FAILED`,
   combos: rows.map((r) => ({ combo: r[1], verdict: r[5], deepRead: r[7], violations: r[8], summary: r[10] })),
 };
-writeFileSync(resolve(ROOT, 'data', 'rollout-audit-summary.json'), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ ...report, combos: `${rows.length} 条,详见 data/rollout-audit-summary.json` }, null, 2));
+writeFileSync(OUT, JSON.stringify(report, null, 2));
+console.log(JSON.stringify({ ...report, combos: `${rows.length} 条,详见 ${OUT}` }, null, 2));
 
 // 失败组合明细直出,便于追查。
 for (const r of rows.filter((x) => x[5] !== 'PASS')) {

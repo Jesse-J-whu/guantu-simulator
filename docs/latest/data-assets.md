@@ -21,12 +21,18 @@
 | 层 | 文件 | 规模 | 写入者 | 角色 |
 |---|---|---|---|---|
 | 事实层 | `data/rollout-traj/<部门>-<难度>.jsonl` | 39 文件 × 500 行,共 ~526MB | rollout driver | 每行=一局完整 24 步(标题/正文/选项/效果/属性/职级全文),**不可变的原始事实** |
-| 分析层 | `data/rollout.db` | players 19,500 / steps 468,000 / audits 39 | driver + `rollout-recheck.mts` 重算回写 | 结构化合规指标与聚合,审计与报告的查询层 |
+| 分析层 | `data/rollout.db` | players 19,500 / steps 468,000 / audits 3(v4 定点) | driver + `rollout-recheck.mts` 重算回写 | 结构化合规指标与聚合,审计与报告的查询层(v4:hard 成本系数 1.2) |
 | 生产层 | `data/rollout-server.db` | visits 994,501 / sessions 19,500 / choices 468,000 | 服务端 `/api/track/*` 生产路径 | 与线上 `guantu.db` 同构的留存库,rollout 期间独立建库 |
 
 设计原则:**recheck 不信任 driver 的运行时计数**,从 JSONL 事实层独立重算后回写
 分析层,两套口径逐玩家一致(drift=0)才算数;重资产(.db/.jsonl)不入 git,
 入库的是结论 JSON、审计文档与全部生成脚本。
+
+另有 **E4 晋升平衡对照快照 `data/promo-balance/`**(入库,共 4 个小文件):
+`old-dist-by-combo.csv`(系数1.3 旧库的 39 组合聚合,重跑覆盖旧库前的唯一「改前」记录,
+含 rank0-rank6 终局秩次与四策略均值)与 `ceiling-hard1.3.json` / `ceiling-hard1.2.json`
+(`scripts/promotion-ceiling.mts` 200 种子确定性上界,详见
+[experiments/exp-promotion-balance.md](../experiments/exp-promotion-balance.md))。
 
 ## 表结构明细
 
@@ -53,9 +59,11 @@
 `steps`:每步一行的轻量索引(`step/year/title/tag_label/continuity_ok/desc_len/
 choice_count/chosen_idx/attr_nonzero/promoted/rank_after/rank_fixes`),
 用于 SQL 快速聚合;完整原文在事实层 JSONL。
-`audits`:39 个审计 subagent 的结论(`verdict/players_total/players_deep_read/
+`audits`:审计 subagent 结论(`verdict/players_total/players_deep_read/
 violations/violation_detail/summary`),由 `scripts/rollout-audit-collect.mjs`
-从 `data/rollout-audit/*.json` 汇入(先清空再插,幂等)。
+汇入(先清空再插,幂等;`AUDIT_DIR`/`OUT` 环境变量可选多套审计)。
+当前表内为 **v4 定点 3 行**(E4,`data/rollout-audit-v4/`);v3 的 39 组合
+全量审计归档在 `data/rollout-audit/` 与 `data/rollout-audit-summary.json`。
 
 ### rollout-server.db — 生产三表(与线上 guantu.db 同构)
 

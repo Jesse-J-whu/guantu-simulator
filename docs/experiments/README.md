@@ -1,24 +1,26 @@
 # 实验总览
 
-官途模拟器上线前的三组核心实验:大规模用户模拟、真实 LLM 多样性、压测与容量修复。
-三篇实验报告按统一结构撰写——**用什么、怎么做的、结果如何、我如何查看**——
+官途模拟器上线前的四组核心实验:大规模用户模拟、真实 LLM 多样性、压测与容量修复、晋升平衡调优。
+四篇实验报告按统一结构撰写——**用什么、怎么做的、结果如何、我如何查看**——
 每个数字都可回溯到 `data/` 下的 JSON/SQLite,或按文中给出的命令自行复跑取数。
 
-## 三个实验一览
+## 四个实验一览
 
 | # | 实验 | 验证什么 | 规模 | 核心结论 | 报告 |
 | --- | --- | --- | --- | --- | --- |
 | E1 | 19,500 玩家大规模 rollout | 生产全链路(真实引擎 + 生产 HTTP + 双 SQLite)下,六大产品诉求是否每局每步成立 | 13 部门 × 3 难度 × 500 玩家 = 19,500 局 / 468,000 步 | 19,500/19,500 完成;11 项违例计数全 0;driver↔独立复核 drift=0;994,501 请求 0 错误;39/39 组合审计 PASS | [exp-rollout-19500.md](./exp-rollout-19500.md) |
 | E2 | 真实 GLM 多样性验证 | 真模型(glm-4-flash)沿生产路径生成时,局内文案重复 / 衔接 / 属性 / 职级是否达标 | 三轮共 29 局真 API 全流程(13+8+8 局,约 1,300 次上游调用) | 局内标题 / 选项 / 正文重复收敛到 0(选项重复 17→3→0);解析、衔接、属性非零均 100%;职级残留 0 | [exp-diversity-realglm.md](./exp-diversity-realglm.md) |
 | E3 | 压测与容量修复 | 单机生产形态服务的容量余量,以及压测能暴露的真实缺陷 | 4 场景共 891,378 请求(autocannon,200/500 并发,8 worker) | 全场景 0 错误;发现并修复 stats() 冷聚合阻塞事件循环(10s TTL 缓存,S3 吞吐 1,188 → 186,651,约 156 倍) | [exp-loadtest.md](./exp-loadtest.md) |
+| E4 | 晋升平衡分析与调优 | hard 难度晋升上界与终局分布是否合理(用户反馈「十分难以晋升」) | 确定性上界模拟 39 组合 × 200 种子 × 5 策略 + 19,500 人全量重跑前后对照 | 「hard good 恒 3.00」属实且是机制死局(预算 101 < 五星累计成本 106);hard 成本系数 1.3→1.2 后五星部门 good 3.00→4.00、星级分层恢复,六诉求 0 违例 | [exp-promotion-balance.md](./exp-promotion-balance.md) |
 
-**三者的分工**(为什么缺一不可):
+**四者的分工**(为什么缺一不可):
 
 - E1 用 mock LLM 换取规模——真实 GLM 单次 ~20 秒,19,500 局约 48.75 万次调用不可行;
 - E2 用真 GLM 换取文案层真实性——mock 的罐装场景无法证明模型行为的多样性;
-- E3 用 mock LLM 隔离出服务器本身的容量——真 API 延迟会掩盖一切服务端问题。
+- E3 用 mock LLM 隔离出服务器本身的容量——真 API 延迟会掩盖一切服务端问题;
+- E4 用与 E1 同构的 mock 管线换取**确定性**——点数预算与成本可精确推导,把「感觉难升」定位成可复算的数学事实,再改动、再全量重跑闭环。
 
-任一实验的结论都在另两个的盲区里,合在一起才是完整证据链。
+任一实验的结论都在另三个的盲区里,合在一起才是完整证据链。
 
 ## 公共说明
 
@@ -31,7 +33,9 @@
 | `scripts/rollout-audit-collect.mjs` | E1 审计汇总:39 组合结论 → audits 表 + summary JSON |
 | `scripts/diversity-scan.mts` | E2 扫描:起真实服务(LLM=real)跑 N 局并汇总 |
 | `scripts/loadtest.mjs` | E3 压测:自包含四场景(`npm run loadtest`) |
+| `scripts/promotion-ceiling.mts` | E4 上界模拟:确定性推算各组合点数预算与晋升成本上界 |
 | `scripts/docs-gen/gen_global_charts.py` | 全部图表(g02-g10)生成,与文字同源 |
+| `scripts/docs-gen/gen_promo_balance.py` | E4 图表(pb01-pb04)生成,与文字同源 |
 
 每篇报告末节给出完整复现命令与环境要求;报告"如何查看"一节的命令均经实测并注明预期输出。
 
@@ -42,9 +46,12 @@
   生产路径留存)、`rollout-traj/`(39 文件 526MB 全量轨迹)。**本文档写作时这些文件仍在
   本地 `data/` 下,可按 E1"如何查看"一节的 SQL/命令直接查询**;克隆仓库后若 data/ 为空,
   相应查询需先复跑实验。
-- **已入库**:`data/rollout-summary.json`、`data/rollout-audit-summary.json`(E1)、
+- **已入库**:`data/rollout-summary.json`(v4 重算口径)、`data/rollout-audit-summary.json`(E1/v3 审计汇总)、
   `data/final-scan-13games.json`、`data/confirm-scan-8games.json`、`data/final-confirm-scan.json`(E2)、
-  `data/loadtest-report.json`(E3),以及 39 组合审计结论 `data/rollout-audit/`(78 文件)。
+  `data/loadtest-report.json`(E3),以及 39 组合审计结论 `data/rollout-audit/`(78 文件,E1/v3 归档)与
+  E4 定点审计 `data/rollout-audit-v4/`;
+  E4 的对照数据 `data/promo-balance/`(旧分布聚合 CSV + SQL 结论 + 新旧两份上界 JSON)——
+  E4 重跑覆盖旧库,「改前」数字只能靠这份快照回溯,故随仓库保存。
 
 ### 数字一致性原则
 
