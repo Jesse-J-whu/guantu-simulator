@@ -13,7 +13,7 @@
 | 改前端页面与交互 | [latest/frontend.md](latest/frontend.md) |
 | 查数据:轨迹/统计/数据库表结构 | [latest/data-assets.md](latest/data-assets.md) |
 | 看某个部门的玩家轨迹 Demo(13 篇,图文) | [demos/](demos/README.md) |
-| 复现实验(19,500 玩家 rollout / 真 GLM 多样性 / 压测) | [experiments/](experiments/README.md) |
+| 复现实验(19,500 玩家 rollout / 真 GLM 多样性 / 压测 / 晋升平衡调优) | [experiments/](experiments/README.md) |
 | 了解每一版 commit 为什么改、怎么验证的 | [dev-history/](dev-history/README.md) |
 
 ## 文档地图

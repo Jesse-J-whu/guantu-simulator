@@ -264,7 +264,7 @@ const lines = [
 
 ![服务器库概览](../assets/global/g09-server-db.png)
 
-上图为 19,500 玩家 rollout(2026-08-21,`LLM_MODE=mock`,8 worker)的服务器侧数据:左图各 API 请求量全部 200、0 错误——`/api/llm-proxy` 487,500 次(19,500 局 × 25 次)、`/api/track/choice` 468,000 次(19,500 局 × 24 步)、start/end 各 19,500 次;右图负载曲线,64 并发通道约 33 分钟内(34 个分钟桶)峰值 32,235 req/min。留存量:`rollout-server.db` visits 994,501 条 / 19,501 独立 IP,sessions 19,500 started / 19,500 ended(通关率 100%)。
+上图为 19,500 玩家 rollout(v4,2026-08-22,`LLM_MODE=mock`,8 worker)的服务器侧数据:左图各 API 请求量全部 200、0 错误——`/api/llm-proxy` 487,500 次(19,500 局 × 25 次)、`/api/track/choice` 468,000 次(19,500 局 × 24 步)、start/end 各 19,500 次;右图负载曲线,64 并发通道约 32 分钟内(34 个分钟桶)峰值 32,029 req/min。留存量:`rollout-server.db` visits 994,501 条 / 19,501 独立 IP,sessions 19,500 started / 19,500 ended(通关率 100%)。v3(2026-08-21)同规模:visits 994,501 / 峰值 32,235——两次重跑服务器侧表现一致,晋升系数改动不触及服务层。
 
 关键实测数字(出处:`docs/loadtest-report.md`、`docs/rollout-report.md`;四场景终测数字与 visits 落库 791,635 见 `data/loadtest-report.json` 与 `data/loadtest.db`)。autocannon 四场景(8 worker + dist 静态 + mock LLM,修复 stats TTL 后终测):
 

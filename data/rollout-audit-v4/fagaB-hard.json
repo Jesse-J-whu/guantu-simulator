@@ -1,0 +1,91 @@
+{
+  "combo": "fagaB/hard",
+  "comboId": 14,
+  "deptName": "发改委",
+  "difficulty": "hard",
+  "engineChange": "DIFFICULTY_FACTOR.hard 1.3→1.2 (E4)",
+  "playersTotal": 500,
+  "mechanicalChecks": {
+    "sql": {
+      "players": 500, "completed": 500, "meets_requirements": 500,
+      "continuity_missing": 0, "title_dup": 0, "choice_dup": 0, "desc_dup": 0,
+      "generic_titles": 0, "attr_zero_offered": 0, "attr_not_applied": 0,
+      "rank_residual": 0, "illegal_rank_change": 0, "llm_errors": 0
+    },
+    "independentRecheck": { "checked": 30, "violations": 0 },
+    "massPromotionReplay": {
+      "desc": "全量 500 人×24 步按 promotion.ts 口径(gainPromotionPoints hard×0.8、tagLabel=晋升机遇→opportunity、考核步 step%3===0、cost=round(PROMOTION_COSTS[r]×1.2×0.94)、廉洁闸门≥35)从 JSONL 独立重放",
+      "players": 500, "perStepPromotedFlagMismatches": 0, "rankAfterMismatches": 0, "promotionCountMismatches": 0,
+      "recomputedDist": { "good:3": 124, "good:4": 1, "bad:1": 125, "mixed:3": 123, "mixed:2": 2, "random:3": 62, "random:2": 62, "random:1": 1 }
+    }
+  },
+  "promotionCheck": {
+    "distByPolicy": {
+      "good": { "1": 0, "2": 0, "3": 124, "4": 1, "mean": 3.008, "expected": 3, "ceilingBaseline": { "good_mean": 3.005, "good_max": 4, "good_min": 3, "good_points": 100.6 } },
+      "bad": { "1": 125, "mean": 1.0, "ceilingBaseline": { "bad_mean": 1, "bad_max": 1, "bad_min": 1 } },
+      "mixed": { "2": 2, "3": 123, "mean": 2.984, "ceilingBaseline": { "mixed_mean": 2.99, "mixed_max": 3, "mixed_min": 2 } },
+      "random": { "1": 1, "2": 62, "3": 62, "mean": 2.488, "ceilingBaseline": { "random_mean": 2.55, "random_max": 3, "random_min": 1 } }
+    },
+    "distVerdict": "good=3 的模态预期成立(124/125)。唯一偏差:player 164 达 4 次(1/125=0.8%),与上界模拟 good_max=4、good_mean=3.005(200 种子中恰 1 个 4 次=0.5%)一致,偏差不大且方向/量级吻合,无需追查实现。但注意:任务占位符『四星前四级累计 104 > 预算 101,数学不可达第 4 级』的表述不成立——101 是上界模拟的均值总点数(100.6),不是硬上界;good 总点数实测分布 97.5–104,p164 恰好 104=cum4 踩线达成第 4 升。正确表述应为『均值预算 100.6<104,第 4 次晋升仅 ~0.5-0.8% 幸运种子可达』。",
+    "pointMath": [
+      {
+        "player": 164, "policy": "good", "seed": 77140164, "promotions": 4, "finalRank": "正处级", "totalPointsGained": 104, "finalBalance": 0,
+        "table": [
+          { "step": 6, "balBefore": 25.0, "cost": 14, "promoted": true },
+          { "step": 9, "balBefore": 24.5, "cost": 20, "promoted": true },
+          { "step": 15, "balBefore": 31.5, "cost": 29, "promoted": true },
+          { "step": 24, "balBefore": 41.0, "cost": 41, "promoted": true }
+        ],
+        "note": "全部晋升均在考核步(step%3===0),廉洁全程 100;总点数 104 恰等于四级累计成本 14+20+29+41,终局余额 0——刀口边界案例,每一步点数都花光,少 0.5 点即无第 4 升。重放与轨迹 0 偏差。"
+      },
+      {
+        "player": 0, "policy": "good", "promotions": 3, "finalRank": "副处级", "totalPointsGained": 100, "finalBalance": 37,
+        "table": [
+          { "step": 6, "balBefore": 25.0, "cost": 14, "promoted": true },
+          { "step": 9, "balBefore": 25.0, "cost": 20, "promoted": true },
+          { "step": 18, "balBefore": 40.5, "cost": 29, "promoted": true }
+        ],
+        "note": "终局余额 37<41,第 4 升不可达;总点数 100 与上界均值 100.6 吻合。"
+      },
+      {
+        "player": 100, "policy": "good", "promotions": 3, "finalRank": "副处级", "totalPointsGained": 98.5, "finalBalance": 35.5,
+        "table": [
+          { "step": 6, "balBefore": 24.5, "cost": 14, "promoted": true },
+          { "step": 9, "balBefore": 23.0, "cost": 20, "promoted": true },
+          { "step": 18, "balBefore": 40.0, "cost": 29, "promoted": true }
+        ],
+        "note": "终局余额 35.5<41,同样停在 3 升。"
+      }
+    ],
+    "goodPointsDistribution": { "min": 97.5, "p50": 100.5, "p90": 102, "max": 104, "ge104": 1, "ge105": 0, "n": 125 },
+    "narrative": "第 4 次晋升(仅 p164)由 step24 年度考核触发,场景为《纪检组长突然约谈》——desc 未提及任何职级,既无『未晋升自称升职』也无『晋升仍称原职』的错位,不违反两类禁则;但『纪检约谈当口获得提拔』在叙事色调上略反讽,属考核步机制与罐装场景解耦的固有现象(mock 场景池无晋升叙述),记为观察项而非违规。ending evalText『4次晋升,平步青云』与 promotions=4 一致。",
+    "integrityGateCase": "『点数够却暂缓提拔』普遍存在:bad 玩家 125/125 在 step18 考核时余额 ≥20(rank1 成本 20)但廉洁已跌至 0–7,被 INTEGRITY_GATE=35 闸住(例:player 1,step18 余额 23.5、廉洁 2,未升)。『廉洁回血后补升』实例为 0:全库 9 人出现过 <35→≥35 回血窗口(bad:21/81/161/409/441/485,random:82/158/202;如 bad#21 step11 廉洁 34→37),但回血步均非考核步或点数不足,无一补升;mixed 的 2 名 2 升玩家(163/183)廉洁全程 ≥57,是点数不足而非闸门。与上界 bad_freeze=621/200 种子(≈3.1 次/人:step18/21/24 三连闸)口径相符。"
+  },
+  "violations": [],
+  "observations": [
+    { "kind": "doc-precision", "detail": "『good 第 4 级数学不可达(预算 101)』应以均值口径表述:实测与上界均显示 good_max=4(1/125 与 1/200),p164 总点数恰 104=cum4。引擎行为与 promotion.ts 规则完全一致,非实现缺陷。" },
+    { "kind": "mock-choice-scene-mismatch", "detail": "罐装选项池(稳妥/程序/关系/省事 四原型)与场景偶有错位,最典型:player 498 step13《防汛值守第一夜》出现「收下购物卡再说」(场景无购物卡);player 0 step23 贿赂信封场景选项「先试点再推开/书面报告最新进展」未针对贿赂。一局内三层不重复(标题/选项/正文)均满足,属 mock 已知口径,不计违规。" },
+    { "kind": "continuity-template", "detail": "23/24 步 continuity 为同一句式『承接「上一标题」的余波,事情还没完。』,承接靠引用上一步标题成立但无场景增量;desc 本身叙事连贯。mock 产物,非违规,接真实 LLM 后应消除。" },
+    { "kind": "promotion-on-negative-choice", "detail": "player 250(random)step24 选「走过场式应付整改」(-4/-5/-4/-7)同考核步升副处级:点数累计制下机械正确,叙事色调欠佳,记为设计观察。" }
+  ],
+  "playersDeepRead": [
+    { "playerIdx": 0, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg100/rank3→GREAT ✓(risk=0)", "最弱一步": "step23 值班室贿赂信封场景,选项「先试点再推开/书面报告最新进展」未针对贿赂本身", "备注": "第3升 step18≥12 合理" },
+    { "playerIdx": 1, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ0→risk=130≥75→BAD ✓", "最弱一步": "step18 余额23.5但廉洁2被闸,此后 19–24 廉洁恒 0", "备注": "廉洁闸门负例样本" },
+    { "playerIdx": 2, "policy": "random", "promotions": 2, "promoSteps": [9, 15], "endingType": "GOOD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ58<70 非GREAT;≥50且avg79.8≥45→GOOD ✓(risk54.6)", "最弱一步": "step12 选「会前先给对方透题」(透题与检查组场景勉强可接)", "备注": "" },
+    { "playerIdx": 3, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ93/avg98.3/rank3→GREAT ✓", "最弱一步": "step4 紧接贿赂事件选「照抄上次材料交差」,承接仅靠句式", "备注": "" },
+    { "playerIdx": 100, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg100/rank3→GREAT ✓", "最弱一步": "step12 检查组进驻场景选「授权他人代办」,处置偏轻", "备注": "总点数98.5,余额35.5<41 停3升" },
+    { "playerIdx": 101, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ0→risk130→BAD ✓", "最弱一步": "step14 座次牌场景选「顺手帮领导办私事」,契合度一般", "备注": "step18 选正分选项系 bad 打分(p+e+n−1.5i)最优,数学一致" },
+    { "playerIdx": 102, "policy": "random", "promotions": 2, "promoSteps": [9, 15], "endingType": "GOOD", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ62/avg70.8→GOOD ✓(risk49.4)", "最弱一步": "step2 选「睁一只眼闭一只眼」与调研名额场景略生硬", "备注": "" },
+    { "playerIdx": 103, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg99.3/rank3→GREAT ✓", "最弱一步": "step7 选「拖到风头过去再说」", "备注": "" },
+    { "playerIdx": 250, "policy": "random", "promotions": 3, "promoSteps": [6, 15, 24], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ93/avg87/rank3→GREAT ✓", "最弱一步": "step24 选「走过场式应付整改」(全负效果)当步考核升副处级,色调反讽", "备注": "点数累计制下机械正确" },
+    { "playerIdx": 251, "policy": "mixed", "promotions": 3, "promoSteps": [6, 12, 21], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg99.8/rank3→GREAT ✓", "最弱一步": "step11 选「让临时工顶在前面」", "备注": "" },
+    { "playerIdx": 252, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 18], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg100/rank3→GREAT ✓", "最弱一步": "step4 方案之争选「转交牵头科室办理」,回避冲突偏平", "备注": "" },
+    { "playerIdx": 253, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ0→risk130→BAD ✓", "最弱一步": "step24 纪检约谈选「适度包装自己的政绩」,讽刺但成立", "备注": "" },
+    { "playerIdx": 448, "policy": "good", "promotions": 3, "promoSteps": [6, 9, 15], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg100/rank3→GREAT ✓", "最弱一步": "step12 选「授权他人代办」应对检查组", "备注": "第3升 step15,节奏最快样本" },
+    { "playerIdx": 449, "policy": "bad", "promotions": 1, "promoSteps": [9], "endingType": "BAD", "finalRank": "副科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ0→risk130→BAD ✓", "最弱一步": "step15 扶贫村场景选「结交企业家校友」,错位明显", "备注": "" },
+    { "playerIdx": 498, "policy": "random", "promotions": 2, "promoSteps": [6, 18], "endingType": "MID", "finalRank": "正科级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ49<50 非GOOD;≥35→MID ✓(risk66.3<75,rankRatio0.4)", "最弱一步": "step13 防汛值守场景出现「收下购物卡再说」选项且被选中,场景无此要素", "备注": "唯一 MID 深读样本,阈值链手工验算通过" },
+    { "playerIdx": 499, "policy": "mixed", "promotions": 3, "promoSteps": [6, 9, 21], "endingType": "GREAT", "finalRank": "副处级", "衔接": "24/24", "属性数学": "通过", "职级": "通过", "结局验算": "integ100/avg100/rank3→GREAT ✓", "最弱一步": "step15 扶贫村选「帮忙遮掩数据缺口」", "备注": "" }
+  ],
+  "verdict": "PASS",
+  "summary": "500 人全过六大机械核验(0 违例),30 人独立重算 0 违规,另做全量 500 人×24 步晋升重放与轨迹 0 偏差;16 人逐字深读(4 good/4 bad/4 random/4 mixed)全部通过。good 晋升分布 124×3+1×4(均值 3.008)与上界基准 good_mean=3.005/good_max=4 一致;唯一 4 升玩家 p164 总点数恰 104=cum4 踩线达成,证伪『第 4 级数学不可达』的绝对表述(101 是均值非上界),但非引擎缺陷。廉洁闸门 125/125 bad 于 step18 被闸、『回血补升』0 例。"
+}

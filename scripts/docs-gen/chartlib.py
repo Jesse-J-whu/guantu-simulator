@@ -56,8 +56,23 @@ def server_db():
 
 
 def load_depts():
-    """部门元数据(ladder/星级/岗位),由 tsx 从 src/engine/departments.ts 导出。"""
-    with open('/tmp/guantu-depts.json', encoding='utf-8') as f:
+    """部门元数据(ladder/星级/岗位),由 tsx 从 src/engine/departments.ts 导出。
+
+    导出命令与 docs/latest/data-assets.md「命令速查」保持一致;文件缺失时自动补导,
+    避免 /tmp 清理后图表脚本静默失效(2026-08-22 g10 复现时踩中)。
+    """
+    import subprocess
+    fp = '/tmp/guantu-depts.json'
+    if not os.path.exists(fp):
+        subprocess.run(
+            ['npx', 'tsx', '-e',
+             "import {DEPARTMENTS} from './src/engine/departments.ts';"
+             "import {writeFileSync} from 'node:fs';"
+             "writeFileSync('/tmp/guantu-depts.json',"
+             "JSON.stringify(DEPARTMENTS.map(d=>({id:d.id,name:d.name,icon:d.icon,"
+             "desc:d.desc,ratings:d.ratings,ranks:d.ranks,rankPositions:d.rankPositions}))))"],
+            cwd=ROOT, check=True)
+    with open(fp, encoding='utf-8') as f:
         return json.load(f)
 
 

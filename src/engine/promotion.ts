@@ -26,7 +26,7 @@ export const REVIEW_INTERVAL = 3;
  * 失去区分度(与"优秀玩家升 4-5 级"的设计期望不符)。1.2 时五星部门
  * (系数 0.88)第 4 次累计 97 ≤ 101 可达、四星及以下仍不可达,星级重新分层。
  */
-const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 };
+export const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 };
 
 /** 廉洁度低于此值暂缓提拔。 */
 const INTEGRITY_GATE = 35;

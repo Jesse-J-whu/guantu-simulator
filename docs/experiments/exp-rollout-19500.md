@@ -201,6 +201,11 @@ r.rankResidual += fixRankFacts(event.desc).fixes.length; // 修正后再扫描,�
 | normal | 3.85 | 3.57 | 3.10 | 1.14 |
 | hard | 2.92 | 2.80 | 2.16 | 1.00 |
 
+> **v4 附注(2026-08-22)**:本表是 v3(hard 成本系数 1.3)口径。E4 调优
+> (1.3→1.2)触发全量重跑后,easy/normal 两行逐组合零变化,hard 行变为
+> 3.16/2.90/2.38/1.00。详见 [exp-promotion-balance.md](./exp-promotion-balance.md)
+> §7.2-7.3 与本文末尾「v4 重跑附记」。
+
 机制解读:同策略 easy>normal>hard、同难度 good>mixed>random>bad——**难度对晋升成本的调节与策略对属性路径的影响都真实生效**。bad 玩家每步最大化 `politics+execute+network−integrity×1.5` 持续压廉洁,廉洁归零后 `(100−廉洁)×难度系数` 在任意难度都 ≥75,必然触发 `ending.ts` 的 BAD 落马分支;晋升侧廉洁 <35 会被 INTEGRITY_GATE 暂缓提拔(`src/engine/promotion.ts`),bad 玩家晋升被冻结在中低段(审计员多个组合亲眼验证)。random 玩家落马人数 easy 0 → normal 11 → hard 66,难度系数同样真实生效。
 
 ![结局分布](../assets/global/g03-ending-dist.png)
@@ -396,6 +401,27 @@ NODE_OPTIONS=--experimental-sqlite node scripts/rollout-audit-collect.mjs
 python3 scripts/docs-gen/gen_global_charts.py
 ```
 
-预期终态:`rollout-summary.json` 的 11 项违例计数全 0、`meetsRate: "100.00%"`、recheck drift 0;`rollout.db` players=19,500、steps=468,000、SUM(promoted)=55,880。
+预期终态:`rollout-summary.json` 的 11 项违例计数全 0、`meetsRate: "100.00%"`、recheck drift 0;`rollout.db` players=19,500、steps=468,000、SUM(promoted)=55,880(v3)/ **56,772(v4,hard 系数 1.2,2026-08-22 起)**。
 
-相关阅读:[实验总览](./README.md) · [E2 真实 GLM 多样性验证](./exp-diversity-realglm.md) · [E3 压测与容量修复](./exp-loadtest.md) · 数字权威来源 `docs/rollout-report.md`
+## 八、v4 重跑附记(E4 晋升平衡调优,2026-08-22)
+
+本篇报告的数字为 **v3** 口径(2026-08-21,hard 成本系数 1.3)。次日 E4 实验
+(起因:用户观察「有的情况下十分难以晋升」)确认 hard 下 good 玩家点数预算 101
+低于所有 ≥5 级部门第 4 次晋升累计成本,属确定性死局,遂将 `promotion.ts` 的
+hard 成本系数调为 1.2 并**全量重跑 19,500 人**(v4)。对本篇结论的影响:
+
+| 维度 | v3 → v4 | 说明 |
+|---|---|---|
+| 六大诉求 11 项计数 | 全 0 → 全 0;drift 0 → 0 | 复核口径不变 |
+| 结局分布 | 13,008/4,952/1,212/325/3 → **完全相同** | ending.ts 系数独立 |
+| easy/normal 26 组合 | 终局分布逐组合**零变化** | 确定性管线,隔离性证据 |
+| hard good 均值 | 2.92 → 3.16(五星部门 3.00→4.00) | E4 的目的与效果 |
+| SUM(promoted) | 55,880(11.95%)→ 56,772(12.13%) | hard +892 步 |
+| visits | 994,501 / 0 错误 → **994,501 / 0 错误**(峰值 32,235 → 32,029 rpm) | 终库直查,量级不变 |
+| 审计 | 39 组合全量(归档 `data/rollout-audit/`)→ +3 组合定点(`data/rollout-audit-v4/`) | v4 只深审行为变化的格子 |
+
+本篇正文不改(v3 数字有 `data/promo-balance/old-dist-by-combo.csv` 快照背书),
+当前库的口径以 v4 为准;机制分析与完整验证见
+[exp-promotion-balance.md](./exp-promotion-balance.md)。
+
+相关阅读:[实验总览](./README.md) · [E2 真实 GLM 多样性验证](./exp-diversity-realglm.md) · [E3 压测与容量修复](./exp-loadtest.md) · [E4 晋升平衡分析与调优](./exp-promotion-balance.md) · 数字权威来源 `docs/rollout-report.md`

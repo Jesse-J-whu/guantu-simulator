@@ -201,3 +201,44 @@ v3 审计(keji-easy 等)确认「A-D 槽位效果符号无倒挂」。
 | `data/rollout-summary.json` | 全局/分组合汇总(recheck 口径) | 28KB |
 | `data/rollout-audit/` | 39 组合审计 JSON+MD | - |
 | `data/rollout-audit-summary.json` | 审计汇总 | - |
+
+---
+
+## 附录:v4 全量重跑(2026-08-22,E4 晋升平衡调优)
+
+> 本报告正文为 v3(2026-08-21,hard 成本系数 1.3)。本附录为 append-only 增量,
+> 不改正文;v3 分布快照已存 `data/promo-balance/old-dist-by-combo.csv`。
+
+**起因与改动**:用户观察「有的情况下十分难以晋升」。E4 分析(上界模拟 200 种子
+× 39 组合 + v3 数据定位)证实 hard 下最优/good 玩家 24 步点数预算恒 ≈101,而
+系数 1.3 时所有 ≥5 级阶梯部门第 4 次晋升累计成本 ≥106 —— 完美发挥也差 5 分,
+hard good 在 12 个 L≥4 部门精确 3.00、全库 0 人超过 3 次晋升,晋升星级失去
+区分度。改动:`src/engine/promotion.ts` `DIFFICULTY_FACTOR.hard` 1.3 → **1.2**
+(单行;easy/normal 与 ending.ts 的独立难度系数不动)。
+
+**v4 重跑结果**(同 driver、同生产路径,1,942s):
+
+| 指标 | v3 | v4 |
+|---|---|---|
+| 完成 / 达标 | 19,500 / 19,500 | 19,500 / 19,500 |
+| 六诉求 11 项计数 | 全 0 | 全 0 |
+| recheck drift | 0 | 0 |
+| 结局分布 GREAT/BAD/GOOD/MID/MID2 | 13,008/4,952/1,212/325/3 | **完全相同** |
+| easy/normal 26 组合终局分布 | — | **与 v3 逐组合零变化** |
+| hard good/mixed/random/bad 均值 | 2.923/2.802/2.164/0.997 | 3.156/2.896/2.383/0.999 |
+| hard good 五星部门(委办/组织部/纪委) | 恒 3.00 | **4.00**(125 人全员) |
+| hard 晋升 4 次人数 | 0 | 386(good 378 + mixed 8) |
+| 组织部 hard 秩次分布(1/2/3/4) | 125/77/298/0 | 125/32/217/126 |
+| SUM(promoted) | 55,880(11.95%) | 56,772(12.13%) |
+| 服务端请求 | 994,501(19,501 IP),0 错误 | **994,501(19,501 IP),0 错误**(峰值 32,029 rpm) |
+
+**审计**:v3 的 39 组合全量审计(624 人逐字深读,0 真实违例)归档于
+`data/rollout-audit/`(汇总 `data/rollout-audit-summary.json`);v4 按
+`docs/audit-prompt-template-v4.md` 对行为实际变化的 3 个组合(委办/组织部/发改委
+× hard)定点深审,结论在 `data/rollout-audit-v4/`。
+
+完整机制推导、方案取舍与图表见
+[experiments/exp-promotion-balance.md](experiments/exp-promotion-balance.md)。
+
+(正文「数据资产清单」表中 `rollout.db` 的 audits 行数现为 3(v4 定点);39 份
+v3 审计文件本身仍完整存于 `data/rollout-audit/`。)

@@ -2,6 +2,7 @@
 # 无手造数据。用法:python3 scripts/docs-gen/gen_global_charts.py
 import json
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -64,15 +65,15 @@ def g02_data_assets():
     ax.set_xlim(0, 12); ax.set_ylim(0, 8)
 
     box(ax, 0.3, 5.2, 3.5, 2.3, '生产留存库(服务端写入)\nrollout-server.db / guantu.db\n\nvisits 994,501 行(19,501 IP)\nsessions 19,500(全部 ended)\nchoices 468,000 行', fc='#ecfdf5', fs=9.5)
-    box(ax, 4.3, 5.2, 3.5, 2.3, '分析库(driver+复核写入)\nrollout.db\n\nplayers 19,500(16合规章字段)\nsteps 468,000\naudits 39(审计结论)', fc='#eff6ff', fs=9.5)
+    box(ax, 4.3, 5.2, 3.5, 2.3, '分析库(driver+复核写入)\nrollout.db(v4,hard系数1.2)\n\nplayers 19,500(16合规章字段)\nsteps 468,000\naudits 3(v4 定点)', fc='#eff6ff', fs=9.5)
     box(ax, 8.3, 5.2, 3.4, 2.3, '原始轨迹(最底层事实)\ndata/rollout-traj/*.jsonl\n\n39 文件 × 500 行\n每行=一局:24步全文\n(标题/正文/选项/效果/属性)', fc='#fef2f2', fs=9.5)
     arrow(ax, 10.0, 5.2, 6.0, 4.7, 'rollout-recheck 独立重算')
     arrow(ax, 6.0, 5.2, 2.2, 4.7, '')
-    box(ax, 0.3, 2.9, 5.0, 1.5, '审计产物 data/rollout-audit/\n39组合 × {JSON结论 + MD人读摘要}\n624人逐字深读 / 0真实违例', fc='#fffbeb', fs=9.5)
+    box(ax, 0.3, 2.9, 5.0, 1.5, '审计产物:v3 全量归档 data/rollout-audit/(39组合,\n624人逐字深读/0违例)+ v4 定点 data/rollout-audit-v4/\n(3组合,hard系数1.2改动面,E4)', fc='#fffbeb', fs=9.5)
     arrow(ax, 8.5, 5.2, 3.0, 4.4, '')
-    box(ax, 5.8, 2.9, 5.9, 1.5, '汇总报告\nrollout-summary.json(重算口径) / rollout-audit-summary.json\nloadtest-report.json / docs/rollout-report.md', fc='#f8fafc', fs=9.5)
+    box(ax, 5.8, 2.9, 5.9, 1.5, '汇总报告\nrollout-summary.json(重算口径) / rollout-audit-summary.json(v3)\nrollout-audit-v4/summary.json(E4) / docs/rollout-report.md', fc='#f8fafc', fs=9.5)
     box(ax, 0.3, 0.5, 11.4, 1.9, '读法:JSONL 是不可变事实层 → recheck 不信任 driver 计数从 JSONL 重算写入 rollout.db →\n审计 subagent 同时核对 JSONL(逐字)与 rollout.db(SQL 机械核验)→ 报告只引用可复算数字。\n重资产(.db/.jsonl)不入库 git,入库的是结论/汇总/审计与全部生成脚本。', fc='#ffffff', fs=9.8)
-    ax.set_title('数据资产与流向(三层数据,数字为 19,500 人终版实测)', fontsize=13)
+    ax.set_title('数据资产与流向(三层数据,数字为 19,500 人 v4 终版实测)', fontsize=13)
     save(fig, G + 'g02-data-assets.png')
 
 
@@ -168,7 +169,17 @@ def g05_effects_hist():
 
 # ---------------------------------------------- g06 30场景×4槽位符号地图
 def g06_slot_signmap():
-    with open('/tmp/scenebank.json', encoding='utf-8') as f:
+    # /tmp 依赖自愈:导出命令与 docs/latest/data-assets.md「命令速查」一致。
+    fp = '/tmp/scenebank.json'
+    if not os.path.exists(fp):
+        subprocess.run(
+            ['npx', 'tsx', '-e',
+             "import {SCENE_BANK,CHOICE_BANK} from './server/mockLLM.js';"
+             "import {writeFileSync} from 'node:fs';"
+             "writeFileSync('/tmp/scenebank.json',"
+             "JSON.stringify({scenes:SCENE_BANK,choices:CHOICE_BANK}))"],
+            cwd=ROOT, check=True)
+    with open(fp, encoding='utf-8') as f:
         bank = json.load(f)['scenes']
     attrs = ['politics', 'execute', 'network', 'integrity']
     slots = ['A 稳妥但费工', 'B 程序优先', 'C 经营关系', 'D 省事但有代价']
@@ -281,7 +292,8 @@ def g09_server_db():
                 xytext=(ns.index(peak) - 9, peak * 0.92), fontsize=9.5,
                 arrowprops=dict(arrowstyle='->', color='#334155'))
     ax.set_title('服务器负载曲线:19,500 玩家并发涌入(64 并发通道)', fontsize=10.5)
-    fig.suptitle('服务端留存库 rollout-server.db 实测(visits 994,501 行)', fontsize=12)
+    total_visits = db.execute('SELECT COUNT(*) n FROM visits').fetchone()['n']
+    fig.suptitle(f'服务端留存库 rollout-server.db 实测(visits {total_visits:,} 行)', fontsize=12)
     save(fig, G + 'g09-server-db.png')
 
 
@@ -311,7 +323,11 @@ def g10_audit_coverage():
         for j in range(3):
             ax.text(j, i, 'PASS\n16人' if grid[i][j] == 16 else str(grid[i][j]),
                     ha='center', va='center', fontsize=7.8, color='#065f46')
-    ax.grid(False); ax.set_title('39 组合审计结论(每格=500人SQL核验+16人逐字深读)', fontsize=11)
+    # v4 定点复审(E4,hard 系数 1.2):红框标出 v3 之后重新深审的组合。
+    for did in ('weiban', 'zuzhiB', 'fagaB'):
+        i = DEPT_ORDER.index(did); j = 2
+        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec='#dc2626', lw=2.2))
+    ax.grid(False); ax.set_title('审计覆盖:v3 全量 39 组合(归档,每格=500人SQL核验\n+16人逐字深读);红框= v4 定点复审(rollout-audit-v4/)', fontsize=10)
     save(fig, G + 'g10-audit-coverage.png')
 
 
@@ -319,5 +335,8 @@ if __name__ == '__main__':
     g01_architecture(); g02_data_assets(); g03_ending_dist(); g04_promotions()
     g05_effects_hist(); g06_slot_signmap(); g07_loadtest(); g08_diversity()
     g09_server_db(); g10_audit_coverage()
-    os.remove(os.path.join(ASSETS, G, '_fonttest.png'))
+    try:
+        os.remove(os.path.join(ASSETS, G, '_fonttest.png'))
+    except FileNotFoundError:
+        pass
     print('ALL GLOBAL CHARTS DONE')

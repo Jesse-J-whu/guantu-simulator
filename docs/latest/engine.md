@@ -291,9 +291,17 @@ mock 的衔接语也只回引 prompt 中真实存在的上一步标题(`server/m
 ```ts
 export const PROMOTION_COSTS = [12, 18, 26, 36, 48, 62, 78]; // :16 索引=当前职级
 export const REVIEW_INTERVAL = 3;                            // :19 每 3 步年度考核
-const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.3 }; // :22 成本系数
+const DIFFICULTY_FACTOR = { easy: 0.8, normal: 1.0, hard: 1.2 }; // :22 成本系数(2026-08-22 hard 1.3→1.2,见下)
 const INTEGRITY_GATE = 35;                                   // :25 廉洁门槛
 ```
+
+> **hard 1.3→1.2 的调参依据**(2026-08-22 晋升平衡分析,完整推导见
+> [experiments/exp-promotion-balance.md](../experiments/exp-promotion-balance.md)):
+> mock 管线下 24 步点数预算按难度锁死(easy ≈151 / normal ≈127 / hard ≈101,
+> good 玩家即最优玩法),1.3 时五星部门第 4 次晋升累计成本 106 > 101,完美发挥
+> 也差 5 分 → hard 下 good 全部门恒 3.00 次、晋升星级失去区分度;1.2 时五星
+> 累计 97 ≤ 101(勉强可达,险胜感),四星 104 / 三星 110 仍不可达,星级分层恢复。
+> easy/normal 与 `ending.ts` 的落马难度系数(独立常量,仍 1.3)均不受影响。
 
 **挣点**(`gainPromotionPoints`,`:28-43`):基础分 `max(0, min(5, 2 + net/8))`(net=四维净和,−20..+25 映射到 0..5);廉洁行为 +1;机遇类事件 +1;难度乘系数(easy ×1.2 / hard ×0.8);四舍五入到 0.5。**清廉能吏的单步典型值约 3.5-7 分(基础封顶 5,廉洁与机遇加成、easy 乘数可再抬高),和稀泥的 D 槽选项净和低且无廉洁加分,典型约 0-2.5 分。**
 
@@ -320,7 +328,7 @@ return Math.max(6, Math.round(base * diff * deptFactor));
 
 ![人均晋升次数](../assets/global/g04-promotions.png)
 
-同策略 easy > normal > hard、同难度 good > mixed > random > bad,两个效应都单调——难度系数(成本 ×0.8/×1.0/×1.3 与挣点 ×1.2/×1.0/×0.8)和策略(净效果与廉洁加分)各自真实生效。数值表见 `docs/rollout-report.md`(easy 4.08/3.98/3.72/2.06,normal 3.85/3.57/3.10/1.14,hard 2.92/2.80/2.16/1.00)。
+同策略 easy > normal > hard、同难度 good > mixed > random > bad,两个效应都单调——难度系数(成本 ×0.8/×1.0/×1.2 与挣点 ×1.2/×1.0/×0.8)和策略(净效果与廉洁加分)各自真实生效。难度 × 策略均值(good/mixed/random/bad,v4 重跑实测):easy 4.08/3.98/3.72/2.06,normal 3.85/3.57/3.10/1.14(与 v3 逐组合零变化);hard 3.16/2.90/2.38/1.00(旧 1.3 时 2.92/2.80/2.16/1.00;委办/组织部/纪委三个五星部门 good 由恒 3.00 抬至 4.00,其余部门不变,重跑验证见 [experiments/exp-promotion-balance.md](../experiments/exp-promotion-balance.md#7-全量重跑验证19500-人))。
 
 ## 7. 结局算法(`src/engine/ending.ts`)
 

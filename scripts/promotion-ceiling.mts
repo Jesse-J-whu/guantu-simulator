@@ -21,6 +21,7 @@ import {
   promotionCost,
   isReviewStep,
   PROMOTION_COSTS,
+  DIFFICULTY_FACTOR,
 } from '../src/engine/promotion.ts';
 import type { Choice, ChoiceEffect, Difficulty, GameState } from '../src/engine/types.ts';
 
@@ -167,6 +168,7 @@ const out = {
   maxSteps: MAX_STEPS,
   reviewSteps: Array.from({ length: MAX_STEPS }, (_, i) => i + 1).filter(isReviewStep),
   promotionCosts: PROMOTION_COSTS,
+  difficultyCostFactor: DIFFICULTY_FACTOR,
   combos: [] as Array<Record<string, unknown>>,
 };
 
@@ -174,7 +176,8 @@ for (const dept of DEPARTMENTS) {
   const ladderLen = dept.ranks.length;
   const starFactor = 1 - (dept.ratings.promotion - 3) * 0.06;
   for (const difficulty of DIFFS) {
-    const diffFactor = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.3 : 1.0;
+    // 与模拟(promotionCost)同源,避免「行为 1.2、报告 1.3」的口径分裂。
+    const diffFactor = DIFFICULTY_FACTOR[difficulty];
     const costs = Array.from({ length: ladderLen - 1 }, (_, r) =>
       Math.max(6, Math.round(PROMOTION_COSTS[Math.min(r, PROMOTION_COSTS.length - 1)] * diffFactor * starFactor)),
     );
