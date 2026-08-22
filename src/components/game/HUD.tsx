@@ -1,7 +1,8 @@
-/** 游戏 HUD:职务/部门/年份/进度 + 晋升绩效进度条。 */
+/** 游戏 HUD:职级/官职/部门/年份/进度 + 晋升绩效进度条。 */
 
 import type { GameState } from '../../engine/types.ts';
 import { promotionProgress, promotionCost } from '../../engine/promotion.ts';
+import { rankPositionOf } from '../../engine/departments.ts';
 
 interface HUDProps {
   state: GameState;
@@ -9,6 +10,7 @@ interface HUDProps {
 
 export function HUD({ state }: HUDProps) {
   const rank = state.dept.ranks[Math.min(state.rank, state.dept.ranks.length - 1)];
+  const position = rankPositionOf(state.dept, state.rank);
   const progress = promotionProgress(state);
   const cost = promotionCost(state);
   const atTop = !isFinite(cost);
@@ -17,9 +19,15 @@ export function HUD({ state }: HUDProps) {
     <div className="game-topbar">
       <div className="game-info">
         <div className="info-item">
-          <span className="info-label">当前职务</span>
+          <span className="info-label">当前职级</span>
           <span className="info-value" id="hud-rank">
             {rank}
+          </span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">当前官职</span>
+          <span className="info-value info-value-position" id="hud-position" title={position}>
+            {position}
           </span>
         </div>
         <div className="info-item">

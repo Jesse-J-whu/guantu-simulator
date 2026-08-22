@@ -11,9 +11,11 @@ interface EventCardProps {
   disabled: boolean;
   chosenIdx: number | null;
   onChoose: (idx: number) => void;
+  /** 当前官职徽标(如 "科员 · 综合科科员/秘书"),由 GameScreen 从状态算出。 */
+  positionLabel?: string;
 }
 
-export function EventCard({ event, year, attrs, disabled, chosenIdx, onChoose }: EventCardProps) {
+export function EventCard({ event, year, attrs, disabled, chosenIdx, onChoose, positionLabel }: EventCardProps) {
   const [visible, setVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +34,11 @@ export function EventCard({ event, year, attrs, disabled, chosenIdx, onChoose }:
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span className={`event-tag ${event.tag}`}>{event.tagLabel}</span>
+        {positionLabel ? (
+          <span className="event-position" data-testid="event-position" title={positionLabel}>
+            {positionLabel}
+          </span>
+        ) : null}
         <span className="event-year">{year} 年</span>
       </div>
       {event.continuity ? <div className="event-continuity">↩ 前情:{event.continuity}</div> : null}

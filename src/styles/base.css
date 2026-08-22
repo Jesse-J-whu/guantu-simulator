@@ -593,6 +593,15 @@
       font-weight: 600;
     }
 
+    /* 官职名可能较长(如"组织部常务副部长/组织部长(县处级)"),截断展示+悬停全称 */
+    .info-value-position {
+      max-width: 190px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+
     @media (max-width: 480px) {
       .game-topbar { padding: 12px 16px; }
       .game-info { gap: 12px; }
@@ -658,6 +667,21 @@
       font-family: var(--font-ui);
       font-size: 0.8rem;
       color: var(--text-dim);
+    }
+
+    /* 事件卡头部的当前官职徽标(每年界面常驻显示职级+官职) */
+    .event-position {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--accent-light);
+      background: rgba(42, 74, 140, 0.12);
+      border: 1px solid var(--accent);
+      padding: 3px 10px;
+      border-radius: 2px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .event-title {
@@ -955,11 +979,22 @@
       font-family: var(--font-ui);
       font-size: 0.85rem;
       color: var(--text-dim);
-      margin-bottom: 32px;
+      margin-bottom: 4px;
       animation: promoSlideUp 0.6s ease 0.5s both;
     }
 
     .promo-rank-from .arrow { color: var(--gold); margin: 0 8px; }
+
+    /* 晋升庆祝里的官职变迁行(职级行下方) */
+    .promo-position {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-bottom: 28px;
+      animation: promoSlideUp 0.6s ease 0.6s both;
+    }
+
+    .promo-position .arrow { color: var(--gold); margin: 0 8px; }
 
     .promo-continue-btn {
       padding: 14px 48px;

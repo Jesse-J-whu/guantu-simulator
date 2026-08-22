@@ -1,6 +1,6 @@
 # 前端详解(latest)
 
-> 活文档:代码变更时必须同步更新本文,维护规则见 [docs/README.md](../README.md)。基线:main@e4fa8f5(2026-08-21)
+> 活文档:代码变更时必须同步更新本文,维护规则见 [docs/README.md](../README.md)。基线:main@146004a + 官职/职级显示改造(feat/rank-position-ui,2026-08-22)
 
 本文描述 `src/` 下的前端:技术栈与构建产物、组件树、`useGame` 状态机与后端 API 的对应关系、玩家可见的关键交互、类型严格模式与 E2E。所有断言以 `src/` 当前代码为准;游戏规则逻辑(事件生成/去重/晋升/结局)在 `src/engine/` 纯 TS 引擎中,可脱离浏览器单测,本文只涉及表现层用到的部分。
 
@@ -45,11 +45,11 @@ App (src/App.tsx)
 ├── BackgroundScreen            screen='background'
 │   └── AttrBars                初始四维属性条
 ├── GameScreen                  screen='game'
-│   ├── HUD                     职务/部门/年份/政绩点 + 双进度条
-│   ├── EventCard               事件卡(或错误重试卡)
+│   ├── HUD                     职级/官职/部门/年份/政绩点 + 双进度条
+│   ├── EventCard               事件卡(或错误重试卡;头部官职徽标)
 │   │   └── AttrBars            卡底"当前属性"
 │   ├── AttrChangeToast         属性变化浮动反馈(诉求3)
-│   └── PromotionOverlay        晋升庆祝弹层
+│   └── PromotionOverlay        晋升庆祝弹层(职级+官职双变迁)
 └── ResultScreen                screen='result'
     └── AttrBars                最终属性条
 ```
@@ -61,15 +61,17 @@ App (src/App.tsx)
 | LoadingScreen | `src/components/screens/LoadingScreen.tsx` | 主文案+副文案(缺省时按时钟轮换 8 条官场闲话) |
 | BackgroundScreen | `src/components/screens/BackgroundScreen.tsx` | 开场白打字机动画(18ms/字,可"跳过动画")、身份徽章、初始属性 |
 | GameScreen | `src/components/screens/GameScreen.tsx` | 组装 HUD+事件卡+反馈层;`error` 优先于 `currentEvent` 渲染错误卡;选中项高亮 1s 并禁用全部选项 |
-| ResultScreen | `src/components/screens/ResultScreen.tsx` | 结局 hero(GREAT/BAD/其他三配色)、最终属性、24 步时间线、官途评语、分享/复制/重开 |
-| HUD | `src/components/game/HUD.tsx` | 当前职务/部门/年份/政绩点;第 N/24 年进度条;晋升进度条(点数/成本,到顶显示"已到顶") |
-| EventCard | `src/components/game/EventCard.tsx` | 类型标签+年份、"↩ 前情"衔接语、标题/描述/格言、A-D 选项(文案+提示)、入场滑动动画;`data-testid="choice-N"` |
+| ResultScreen | `src/components/screens/ResultScreen.tsx` | 结局 hero(GREAT/BAD/其他三配色)、统计行含**终局官职**(`data-testid="final-position"`)、最终属性、24 步时间线、官途评语、分享/复制/重开 |
+| HUD | `src/components/game/HUD.tsx` | **当前职级**(`#hud-rank`)+**当前官职**(`#hud-position`,如"综合科科员/秘书",长名截断+悬停全称)/部门/年份/政绩点;第 N/24 年进度条;晋升进度条(点数/成本,到顶显示"已到顶") |
+| EventCard | `src/components/game/EventCard.tsx` | 类型标签+**官职徽标**(`data-testid="event-position`",`科员 · 综合科科员/秘书`)+年份、"↩ 前情"衔接语、标题/描述/格言、A-D 选项(文案+提示)、入场滑动动画;`data-testid="choice-N"` |
 | AttrBars | `src/components/game/AttrBars.tsx` | 四维属性条(政治嗅觉/执行力/人脉资源/廉洁度),可选差值闪光 |
 | AttrChangeToast | `src/components/game/AttrChangeToast.tsx` | 选择后弹出非零属性变化+政绩点,2800ms 自动消失;`data-testid="attr-toast"` |
-| PromotionOverlay | `src/components/game/PromotionOverlay.tsx` | 晋升庆祝:徽标、"恭喜晋升"、旧→新职级、晋升原因、"继续仕途"(Enter/Space 可关) |
+| PromotionOverlay | `src/components/game/PromotionOverlay.tsx` | 晋升庆祝:徽标、"恭喜晋升"、旧→新职级、**官职变迁行**(`data-testid="promo-position"`,如"综合科科员/秘书 → 综合科副科长/副主任科员")、晋升原因、"继续仕途"(Enter/Space 可关) |
 | StarRating | `src/components/common/StarRating.tsx` | 纯展示五星星级 |
 
-组件普遍埋了 `data-testid` 供 E2E 定位:`choice-0..3`(选项)、`attr-toast`(属性反馈)、`promo-overlay`/`promo-continue`(晋升)、`error-card`/`retry-btn`(错误重试)、`current-attrs`(属性面板);HUD 另有 `hud-rank`/`hud-year`/`hud-points` 等 id。
+组件普遍埋了 `data-testid` 供 E2E 定位:`choice-0..3`(选项)、`attr-toast`(属性反馈)、`promo-overlay`/`promo-continue`/`promo-position`(晋升)、`error-card`/`retry-btn`(错误重试)、`current-attrs`(属性面板)、`event-position`(事件卡官职徽标)、`final-position`(结算屏终局官职);HUD 另有 `hud-rank`/`hud-position`/`hud-year`/`hud-points` 等 id。
+
+官职名与职级的对照统一来自 `departments.ts` 的 `rankPositions` 表,取值入口是 `rankPositionOf(dept, rankIdx)`(`src/engine/departments.ts:456`,缺映射回退职级名、索引越界取首/末级)——HUD、事件卡徽标、晋升庆祝、结算屏四处展示与 `rankRules.ts` 职级事实校验**同源**,保证界面所见即引擎事实。
 
 引擎侧模块速览(表现层经 `useGame` 间接使用,全部可在 Node 单测):`gameEngine.ts`(编排)、`parser.ts`(【】标记解析与修复)、`promptBuilder.ts`(提示词+叙事指令库)、`dedup.ts`(标题/选项去重)、`rankRules.ts`(职级事实校验)、`effects.ts`(效果再平衡)、`promotion.ts`(绩效点/考核/晋升成本)、`ending.ts`(结局判定)、`storyMemory.ts`(NPC 名册/摘要/线索)、`rag.ts`(真实案例检索)、`rng.ts`(可注入随机源)、`departments.ts`(13 部门数据)、`llm.ts`(三种 LLM 客户端)、`types.ts`(全部类型)。
 
@@ -152,7 +154,7 @@ setTimeout(() => void generateNext(result.state), 900);  // 留 900ms 看 toast
 
 ![开场](../assets/user-journey/e2e-02-background.png)
 
-**3. 首个事件**——`GameScreen`:`HUD` 显示"第 1 年 / 共 24 年"与晋升进度条;`EventCard` 呈现类型标签、正文与 A-D 四个选项。
+**3. 首个事件**——`GameScreen`:`HUD` 显示当前职级/当前官职/部门/年份与"第 1 年 / 共 24 年"晋升进度条;`EventCard` 头部带官职徽标(如 `科员 · 综合科科员/秘书`),呈现类型标签、正文与 A-D 四个选项。
 
 ![首事件](../assets/user-journey/e2e-03-first-event.png)
 
@@ -164,7 +166,7 @@ setTimeout(() => void generateNext(result.state), 900);  // 留 900ms 看 toast
 
 ![晋升](../assets/user-journey/e2e-05-promotion-2.png)
 
-**6. 结局结算**——`ResultScreen` 全页:结局 hero 与统计、最终属性、24 步官途时间线(晋升步带标记)、官途评语与分享/重开。
+**6. 结局结算**——`ResultScreen` 全页:结局 hero 与统计(晋升次数/年数/终职/终局官职)、最终属性、24 步官途时间线(晋升步带标记)、官途评语与分享/重开。
 
 ![结算](../assets/user-journey/e2e-06-result.png)
 
@@ -193,7 +195,7 @@ setTimeout(() => void generateNext(result.state), 900);  // 留 900ms 看 toast
   1. **完整一局**(串行,240s 上限):部门选择(13 卡)→ 难度 → 背景(打字机+跳过)→ **24 步主循环**:轮换点击 4 个选项、每步(终局步除外)断言属性 toast 可见、步进用 `page.evaluate` 瞬时读 DOM 判定结果(ERROR/PROMO/NEXT/RESULT)、错误则点击重试、晋升则断言弹层文案并"继续仕途";结局屏断言 hero 与时间线,最后 `GET /api/stats` 断言本局轨迹已入库(started/completed/completionRate)。全程关键节点截图(即 §5 六图 + 错误/晋升备选)。
   2. **admin 仪表盘**可访问且含统计文案。
   3. **健康检查与 LLM 代理契约**:`/healthz` 返回 `mode:'mock'`;`/api/llm-proxy` 返回 `content>20` 字符、`provider:'mock'`。
-- **单元/集成(vitest)**:引擎测试在 `tests/unit/`(dedup/departments/effects/ending/gameEngine/parser/promotion/rankRules/storyMemory + 服务端 stats TTL 缓存),服务端集成在 `tests/integration/`(`server.test.ts` 覆盖全部 API 路由、穿越防护、XFF 限流、503 兜底;`llmTimeout.test.ts` 锁超时语义)。前端组件无独立渲染测试,由 E2E 全流程覆盖。
+- **单元/集成(vitest)**:引擎测试在 `tests/unit/`(dedup/departments/effects/ending/gameEngine/parser/promotion/rankRules/storyMemory + 服务端 stats TTL 缓存),服务端集成在 `tests/integration/`(`server.test.ts` 覆盖全部 API 路由、穿越防护、XFF 限流、503 兜底;`llmTimeout.test.ts` 锁超时语义)。前端组件测试在 `tests/unit/ui/`(jsdom + @testing-library/react,文件头 `// @vitest-environment jsdom` 切环境;`rankDisplay.test.tsx` 覆盖 HUD 职级/官职、事件卡徽标、晋升官职变迁、结算官职);`vite.config.ts` 的 vitest include 含 `*.test.tsx`。E2E 另对 `#hud-position`/`event-position`/`promo-position`/`final-position` 全流程断言。
 
 ## 8. 数据来源与复现
 

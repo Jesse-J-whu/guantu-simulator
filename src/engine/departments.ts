@@ -448,3 +448,13 @@ export function getDeptById(id: string): Dept {
   if (!dept) throw new Error(`Unknown department id: ${id}`);
   return dept;
 }
+
+/**
+ * 职级索引对应的官职名(如 1 → "综合科副科长/副主任科员")。
+ * 缺映射时回退职级名本身;索引越界取首/末级。供 HUD/事件卡/晋升庆祝/结算屏展示,
+ * 与 rankRules 的职务对照表同源,保证"所见即引擎事实"。
+ */
+export function rankPositionOf(dept: Dept, rankIdx: number): string {
+  const name = dept.ranks[Math.min(Math.max(rankIdx, 0), dept.ranks.length - 1)];
+  return dept.rankPositions[name] || name;
+}
